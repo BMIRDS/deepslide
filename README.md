@@ -40,18 +40,18 @@ If you do not want to duplicate the data, set `keep_orig_copy` in `code/config.p
 - Generate patches for the training set.
 - Balance the class distribution for the training set.
 - Generate patches for the validation set.
-- Generate patches by folder for wsi in the validation set.
-- Generate patches by folder for wsi in the testing set.
+- Generate patches by folder for WSI in the validation set.
+- Generate patches by folder for WSI in the testing set.
 
 ```
 python code/2_process_patches.py
 ```
 
-Note that this will take up a significant amount of space. Edit `num_train_per_class` in `config.py` to be smaller if you wish to not generate as many windows. If your images are histopathology images dyed purple, whitespace will automatically be filtered. Turn this off in `type_histopath` in `code/config.py`. Default overlapping area is 1/3 for test slides. Use 1 or 2 if your images are very large; you can also change this in `slide_overlap` in `code/config.py`.
+Note that this will take up a significant amount of space. Edit `num_train_per_class` in `config.py` to be smaller if you wish to not generate as many windows. If your histopathology images are H&E-stained, whitespace will automatically be filtered. Turn this off in `type_histopath` in `code/config.py`. Default overlapping area is 1/3 for test slides. Use 1 or 2 if your images are very large; you can also change this in `slide_overlap` in `code/config.py`.
 
 **Inputs**: `wsi_train`, `wsi_val`, `wsi_test`
 
-**Outputs**: `train_folder` (fed into model for training), `patches_eval_train` (for validation, sorted by wsi), `patches_eval_test` (for testing, sorted by wsi)
+**Outputs**: `train_folder` (fed into model for training), `patches_eval_train` (for validation, sorted by WSI), `patches_eval_test` (for testing, sorted by WSI)
 
 
 
@@ -61,7 +61,7 @@ Note that this will take up a significant amount of space. Edit `num_train_per_c
 CUDA_VISIBLE_DEVICES=0 python code/3_train.py
 ```
 
-We recommend using ResNet-18 if you are using a histopathology dataset. You can change hyperparameters in `code/config.py`. There is an option to retrain from a previous checkpoint. Model checkpoints are saved by default every epoch in `checkpoints`.
+We recommend using ResNet-18 if you are training on a relatively small histopathology dataset. You can change hyperparameters in `code/config.py`. There is an option to retrain from a previous checkpoint. Model checkpoints are saved by default every epoch in `checkpoints`.
 
 **Inputs**: `train_folder`
 
@@ -87,7 +87,7 @@ We automatically choose the model with the best validation accuracy. You can als
 
 ## 5. Searching for Best Thresholds
 
-The simplest way to make a whole-slide inference is to choose the class with the most patch predictions. We do this. We can also implement thresholding on the patch level to throw out noise. To find the best thresholds, we do a grid search. This function will generate csv files for each wsi with the predictions for each patch.
+The simplest way to make a whole-slide inference is to choose the class with the most patch predictions. We can also implement thresholding on the patch level to throw out noise. To find the best thresholds, we perform a grid search. This function will generate csv files for each WSI with the predictions for each patch.
 
 ```
 python code/5_grid_search.py
@@ -101,7 +101,7 @@ python code/5_grid_search.py
 
 ## 6. Visualization
 
-A good way to see what the network is looking at is to look at the predictions for each class.
+A good way to see what the network is looking at is to visualize the predictions for each class.
 
 ```
 python code/6_visualize.py
@@ -116,7 +116,7 @@ You can change the colors in `colors` in `code/config.py`
 ![alt text](figures/sample.jpeg)
 
 
-## 7. Testing
+## 7. Final Testing
 
 Do the final testing to get the confusion matrix on the test set.
 
@@ -158,4 +158,7 @@ See `code/z_preprocessing` for some code to convert images from svs into jpg. Th
 - Code for generating patches on the fly instead of storing them in memory for training and testing would save a lot of disk space.
 - If you have issues, please post in the issues section and we will do our best to help.
 
+# Citations
+
+This method was used in [Deep learning for classification of colorectal polyps on whole-slide images](http://www.jpathinformatics.org/article.asp?issn=2153-3539;year=2017;volume=8;issue=1;spage=30;epage=30;aulast=Korbar) by Korbar et al, published in the Journal of Pathology Informatics in 2017 and winner of the Journal of Pathology Informatics Most Popular Article Award for 2017.
 
