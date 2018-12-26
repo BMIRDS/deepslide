@@ -1,4 +1,4 @@
-# DeepSlide: A Sliding Window Framework for Classification of High-Resolution Microscopy Images (Whole-Slide Images)
+# DeepSlide: A Sliding Window Framework for Classification of High Resolution Microscopy Images (Whole-Slide Images)
 
 By Jason Wei, Behnaz Abdollahi, and Saeed Hassanpour
 
