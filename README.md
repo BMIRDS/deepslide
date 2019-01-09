@@ -1,8 +1,8 @@
 # DeepSlide: A Sliding Window Framework for Classification of High Resolution Microscopy Images (Whole-Slide Images)
 
-By Jason Wei, Behnaz Abdollahi, and Saeed Hassanpour
+By [Jason Wei](jasonwei20.github.io), Behnaz Abdollahi, and [Saeed Hassanpour](hassanpourlab.com)
 
-This repository is a sliding window framework for classification of high resolution whole-slide images, often microscopy or histopathology images. 
+This repository is a sliding window framework for classification of high resolution whole-slide images, often microscopy or histopathology images. Contact Saeed Hassanpour at [Saeed.Hassanpour@dartmouth.edu](Saeed.Hassanpour@dartmouth.edu).
 
 ![alt text](figures/figure-2-color.jpeg)
 
@@ -151,6 +151,7 @@ See `code/z_preprocessing` for some code to convert images from svs into jpg. Th
 - Did you pre-process your images? If you used raw .svs files that are more than 1GB in size, its likely that the patches are way too zoomed in to see any cell structures.
 - If you have less than 10 WSI per class in the training set, get more.
 - Normalizing color channels with custom values. You can change this in `utils_model.py`.
+- Feel free to view our end-to-end attention-based model: [https://arxiv.org/abs/1811.08513](https://arxiv.org/abs/1811.08513).
 
 # Future Work
 
