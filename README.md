@@ -2,7 +2,7 @@
 
 By [Jason Wei](https://jasonwei20.github.io), Behnaz Abdollahi, and [Saeed Hassanpour](https://hassanpourlab.com)
 
-This repository is a sliding window framework for classification of high resolution whole-slide images, often microscopy or histopathology images. Contact Saeed Hassanpour at [Saeed.Hassanpour@dartmouth.edu]( ).
+This repository is a sliding window framework for classification of high resolution whole-slide images, often microscopy or histopathology images.
 
 ![alt text](figures/figure-2-color.jpeg)
 
@@ -161,7 +161,7 @@ See `code/z_preprocessing` for some code to convert images from svs into jpg. Th
 
 # Citations
 
-DeepSlide is an open-source library and is licensed under the [GNU General Public License (v3)](https://www.gnu.org/licenses/gpl-3.0.en.html). This method was orginally used in [Deep learning for classification of colorectal polyps on whole-slide images](http://www.jpathinformatics.org/article.asp?issn=2153-3539;year=2017;volume=8;issue=1;spage=30;epage=30;aulast=Korbar), published in the Journal of Pathology Informatics in 2017 and recognized as the winner of the Journal of Pathology Informatics Most Popular Article Award of that year. If you are using this library please cite:
+DeepSlide is an open-source library and is licensed under the [GNU General Public License (v3)](https://www.gnu.org/licenses/gpl-3.0.en.html). This method was orginally used in [Deep learning for classification of colorectal polyps on whole-slide images](http://www.jpathinformatics.org/article.asp?issn=2153-3539;year=2017;volume=8;issue=1;spage=30;epage=30;aulast=Korbar), published in the Journal of Pathology Informatics in 2017 and recognized as the winner of the Journal of Pathology Informatics Most Popular Article Award of that year. For questions contact Saeed Hassanpour at [Saeed.Hassanpour@dartmouth.edu]( ). If you are using this library please cite:
 
 
 Bruno Korbar, Andrea M. Olofson, Allen P. Miraflor, Catherine M. Nicka, Matthew A. Suriawinata, Lorenzo Torresani, Arief A. Suriawinata, Saeed Hassanpour, “Deep Learning for Classification of Colorectal Polyps on Whole-Slide Images”, Journal of Pathology Informatics, 8:30, 2017.
