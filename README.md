@@ -1,6 +1,6 @@
 # DeepSlide: A Sliding Window Framework for Classification of High Resolution Microscopy Images (Whole-Slide Images)
 
-By [Jason Wei](jasonwei20.github.io), Behnaz Abdollahi, and [Saeed Hassanpour](hassanpourlab.com)
+By [Jason Wei](https://jasonwei20.github.io), Behnaz Abdollahi, and [Saeed Hassanpour](https://hassanpourlab.com)
 
 This repository is a sliding window framework for classification of high resolution whole-slide images, often microscopy or histopathology images. Contact Saeed Hassanpour at [Saeed.Hassanpour@dartmouth.edu](Saeed.Hassanpour@dartmouth.edu).
 
