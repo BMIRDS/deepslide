@@ -2,7 +2,7 @@
 
 By [Jason Wei](https://jasonwei20.github.io), Behnaz Abdollahi, and [Saeed Hassanpour](https://hassanpourlab.com)
 
-This repository is a sliding window framework for classification of high resolution whole-slide images, often called microscopy or histopathology images.
+This repository is a sliding window framework for classification of high resolution whole-slide images, often called microscopy or histopathology images. This is also the code for [Pathologist-level Classification of Histologic Patterns on Resected Lung Adenocarcinoma Slides with Deep Neural Networks](https://arxiv.org/abs/1901.11489).
 
 ![alt text](figures/figure-2-color.jpeg)
 
