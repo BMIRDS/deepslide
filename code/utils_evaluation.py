@@ -202,6 +202,7 @@ def color_to_np_color(color):
 				'pink': np.array([255, 108, 180]),
 				'black': np.array([0, 0, 0]),
 				'red': np.array([255, 0, 0]), 
+		  		'purple': np.array([225, 225, 0]),
 				'yellow': np.array([255, 255, 0]), 
 				'orange': np.array([255, 127, 80]),
 				'blue': np.array([0, 0, 255]),
