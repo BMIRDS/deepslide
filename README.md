@@ -29,11 +29,11 @@ python code/1_split.py
 
 If you do not want to duplicate the data, set `keep_orig_copy` in `code/config.py` to `False`.
 
-**Inputs**: `all_wsi`
+**Inputs**: `all_wsi` 
 
 **Outputs**: `wsi_train`, `wsi_val`, `wsi_test`, `labels_train.csv`, `labels_val.csv`, `labels_test.csv`
 
-
+Note that `all_wsi` must contain subfolders of images labeled by class. For instance, if your two classes are `a` and `n`, you must have `a/*.jpg` with the images in class `a` and `n/*.jpg` with images in class `n`.
 
 ## 2. Data Processing
 
