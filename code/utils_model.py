@@ -73,39 +73,16 @@ class Random90Rotation():
 
 #instantiate the model
 def create_model(num_layers, pretrain):
-
     assert num_layers in [18, 24, 50, 101, 152]
-    architecture = 'resnet' + str(num_layers)
-    model = None
+    architecture = "resnet{}".format(num_layers)
+    model_constructor = getattr(torchvision.models, architecture)
+    model = model_constructor(num_classes=config.num_classes)
 
-    #for pretrained on imagenet
-    if pretrain == True:
-        if architecture == 'resnet18':
-            model = torchvision.models.resnet18(pretrained=True)
-        elif architecture == 'resnet34':
-            model = torchvision.models.resnet34(pretrained=True)
-        elif architecture == 'resnet50':
-            model = torchvision.models.resnet50(pretrained=True)
-        elif architecture == 'resnet101':
-            model = torchvision.models.resnet101(pretrained=True)
-        elif architecture == 'resnet152':
-            model = torchvision.models.resnet152(pretrained=True)
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, config.num_classes)
-
-    #default he initialization
-    else:
-        if architecture == 'resnet18':
-            model = torchvision.models.resnet18(pretrained=False, num_classes=config.num_classes)
-        elif architecture == 'resnet34':
-            model = torchvision.models.resnet34(pretrained=False, num_classes=config.num_classes)
-        elif architecture == 'resnet50':
-            model = torchvision.models.resnet50(pretrained=False, num_classes=config.num_classes)
-        elif architecture == 'resnet101':
-            model = torchvision.models.resnet101(pretrained=False, num_classes=config.num_classes)
-        elif architecture == 'resnet152':
-            model = torchvision.models.resnet152(pretrained=False, num_classes=config.num_classes)
-        
+    if pretrain is True:
+        pretrained = model_constructor(pretrained=True).state_dict()
+        if config.num_classes != pretrained['fc.weight'].size(0):
+            del pretrained['fc.weight'], pretrained['fc.bias']
+        model.load_state_dict(pretrained, strict=False)
     return model
 
 #get the data transforms:
