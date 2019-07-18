@@ -22,6 +22,16 @@ import operator
 ############# MISC FUNCTIONS ##############
 ###########################################
 
+PATH_MEAN = [0.7, 0.6, 0.7]
+PATH_STD = [0.15, 0.15, 0.15]
+
+
+def reverse_norm(mean, std):
+    mean = torch.tensor(mean, dtype=torch.float32)
+    std = torch.tensor(std, dtype=torch.float32)
+    return (-mean/std).tolist(), (1/std).tolist()
+
+
 #computing the confusion matrix
 def update_confusion_matrix(all_labels, all_predicts, batch_labels, batch_predicts, num_classes):
 
@@ -96,15 +106,15 @@ def get_data_transforms():
             transforms.RandomVerticalFlip(),
             Random90Rotation(),
             transforms.ToTensor(),
-            transforms.Normalize([0.7, 0.6, 0.7], [0.15, 0.15, 0.15]) #mean and standard deviations for lung adenocarcinoma resection slides
+            transforms.Normalize(PATH_MEAN, PATH_STD) #mean and standard deviations for lung adenocarcinoma resection slides
         ]),
         'val': transforms.Compose([
             transforms.CenterCrop(config.patch_size),
             transforms.ToTensor(),
-            transforms.Normalize([0.7, 0.6, 0.7], [0.15, 0.15, 0.15])
+            transforms.Normalize(PATH_MEAN, PATH_STD)
         ]),
         'unnormalize': transforms.Compose([
-            transforms.Normalize([1/0.15, 1/0.15, 1/0.15], [1/0.15, 1/0.15, 1/0.15])
+            transforms.Normalize(*reverse_norm(PATH_MEAN, PATH_STD))
         ]),
     }
 
@@ -253,15 +263,15 @@ def train_resnet(train_folder, num_epochs, num_layers,
             transforms.RandomVerticalFlip(),
             Random90Rotation(),
             transforms.ToTensor(),
-            transforms.Normalize([0.7, 0.6, 0.7], [0.15, 0.15, 0.15]) #mean and standard deviations for lung adenocarcinoma resection slides
+            transforms.Normalize(PATH_MEAN, PATH_STD) #mean and standard deviations for lung adenocarcinoma resection slides
         ]),
         'val': transforms.Compose([
             transforms.CenterCrop(config.patch_size),
             transforms.ToTensor(),
-            transforms.Normalize([0.7, 0.6, 0.7], [0.15, 0.15, 0.15])
+            transforms.Normalize(PATH_MEAN, PATH_STD)
         ]),
         'unnormalize': transforms.Compose([
-            transforms.Normalize([1/0.15, 1/0.15, 1/0.15], [1/0.15, 1/0.15, 1/0.15])
+            transforms.Normalize(*reverse_norm(PATH_MEAN, PATH_STD))
         ]),
     }
 
@@ -354,10 +364,10 @@ def get_predictions(patches_eval_folder, auto_select, eval_model, checkpoints_fo
         'normalize': transforms.Compose([
             transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize([0.7, 0.6, 0.7], [0.15, 0.15, 0.15])
+            transforms.Normalize(PATH_MEAN, PATH_STD)
         ]),
         'unnormalize': transforms.Compose([
-            transforms.Normalize([1/0.15, 1/0.15, 1/0.15], [1/0.15, 1/0.15, 1/0.15])
+            transforms.Normalize(*reverse_norm(PATH_MEAN, PATH_STD))
         ]),
     }
 
