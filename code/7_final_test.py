@@ -6,12 +6,15 @@
 import utils_evaluation
 from utils_evaluation import *
 
-best_thresholds = get_best_thresholds(	labels_csv = config.labels_val, 
-								inference_folder = config.inference_val)
+best_thresholds = get_best_thresholds(labels_csv=config.labels_val,
+                                      inference_folder=config.inference_val
+                                      )
 
-output_all_predictions(	patches_pred_folder = config.preds_test,
-						output_folder = config.inference_test,
-						conf_thresholds = best_thresholds)
+output_all_predictions(patches_pred_folder=config.preds_test,
+                       output_folder=config.inference_test,
+                       conf_thresholds=best_thresholds
+                       )
 
-print_final_test_results(labels_csv = config.labels_test, 
-						inference_folder = config.inference_test)
+print_final_test_results(labels_csv=config.labels_test,
+                         inference_folder=config.inference_test
+                         )
