@@ -1,17 +1,25 @@
-# DeepSlide
-# Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
+"""
+DeepSlide
+Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
 
-# This splits the train, val, and test data.
+This splits the train, val, and test data.
+"""
 
 import config
-from utils import *
+from os.path import basename, join, dirname
+from utils import (
+    confirm_output_folder,
+    get_subfolder_paths,
+    get_image_paths,
+)
 
 
 # main function
 # note that we want the validation and test sets to be balanced
-def split(all_wsi, train_folder, val_folder, test_folder, val_split, test_split, keep_orig_copy, labels_train, labels_val, labels_test):
+def split(all_wsi, train_folder, val_folder, test_folder, val_split,
+          test_split, keep_orig_copy, labels_train, labels_val, labels_test):
 
-    head = 'cp' if keep_orig_copy else 'mv'     # based on whether we want to move or keep the files
+    head = 'cp' if keep_orig_copy else 'mv'  # based on whether we want to move or keep the files
 
     # create folders
     for folder in [train_folder, val_folder, test_folder]:
@@ -23,12 +31,36 @@ def split(all_wsi, train_folder, val_folder, test_folder, val_split, test_split,
     val_img_to_label = {}
     test_img_to_label = {}
 
+    def move_set(folder, image_files, ops):
+        """
+        Return:
+            a dictionary where
+                key is (str)image_file_name and
+                value is (str)image_class
+        """
+        def remove_topdir(filepath):
+            """filepath should be a relative path
+            ex) a/b/c.jpg -> b/c.jpg
+            """
+            first_delimiter_idx = filepath.find('/')
+            return filepath[first_delimiter_idx + 1:]
+
+        img_to_label = {}
+        for image_file in image_files:
+            output_path = join(folder, remove_topdir(image_file))
+            os.system(f'{ops} {image_file} {output_path}')
+            img_name = basename(image_file)
+            img_class = basename(dirname(image_file))
+            img_to_label[img_name] = img_class
+        return img_to_label
+
     # sort the images and move/copy them appropriately
     subfolder_paths = get_subfolder_paths(all_wsi)
     for subfolder in subfolder_paths:
 
         image_paths = get_image_paths(subfolder)
-        assert len(image_paths) > val_split + test_split     # make sure we have enough slides in each class
+        assert len(image_paths) > val_split + test_split
+        # make sure we have enough slides in each class
 
         # assign training, test, and val images
         test_idx = len(image_paths) - test_split
@@ -36,50 +68,41 @@ def split(all_wsi, train_folder, val_folder, test_folder, val_split, test_split,
         train_images = image_paths[:val_idx]
         val_images = image_paths[val_idx:test_idx]
         test_images = image_paths[test_idx:]
-        print('class '+subfolder.split('/')[-1] + ':', '#train=' + str(len(train_images)), '#val=' + str(len(val_images)), '#test=' + str(len(test_images)))
+        print('class {}:'.format(basename(subfolder)),
+              '#train={}'.format(len(train_images)),
+              '#val={} '.format(len(val_images)),
+              '#test={}'.format(len(test_images)))
 
         # move train
-        for train_image in train_images:
-            output_path = '/'.join([train_folder, '/'.join(train_image.split('/')[1:])])
-            os.system(' '.join([head, train_image, output_path]))
-            img_name = train_image.split('/')[-1]
-            img_class = train_image.split('/')[-2]
-            train_img_to_label[img_name] = img_class
-            # writer_train.write(img_name + ',' + img_class + '\n')
+        tmp_train_img_to_label = move_set(folder=train_folder,
+                                          image_files=train_images,
+                                          ops=head)
+        train_img_to_label.update(tmp_train_img_to_label)
 
         # move val
-        for val_image in val_images:
-            output_path = '/'.join([val_folder, '/'.join(val_image.split('/')[1:])])
-            os.system(' '.join([head, val_image, output_path]))
-            img_name = val_image.split('/')[-1]
-            img_class = val_image.split('/')[-2]
-            val_img_to_label[img_name] = img_class
-            # writer_val.write(img_name + ',' + img_class + '\n')
+        tmp_val_img_to_label = move_set(folder=val_folder,
+                                        image_files=val_images,
+                                        ops=head)
+        val_img_to_label.update(tmp_train_img_to_label)
 
         # move test
-        for test_image in test_images:
-            output_path = '/'.join([test_folder, '/'.join(test_image.split('/')[1:])])
-            os.system(' '.join([head, test_image, output_path]))
-            img_name = test_image.split('/')[-1]
-            img_class = test_image.split('/')[-2]
-            test_img_to_label[img_name] = img_class
-            # writer_test.write(img_name + ',' + img_class + '\n')
+        tmp_test_img_to_label = move_set(folder=test_folder,
+                                         image_files=test_images,
+                                         ops=head)
 
     # for making the csv files
-    writer_train = open(labels_train, 'w')
-    writer_train.write('img,gt\n')
-    for img in sorted(train_img_to_label.keys()):
-        writer_train.write(img + ',' + train_img_to_label[img] + '\n')
+    def write_to_csv(dest_filename, image_lable_dict):
+        with open(dest_filename, 'w') as writer:
+            writer.write('img,gt\n')
+            for img in sorted(image_lable_dict.keys()):
+                writer.write(img + ',' + image_lable_dict[img] + '\n')
 
-    writer_val = open(labels_val, 'w')
-    writer_val.write('img,gt\n')
-    for img in sorted(val_img_to_label.keys()):
-        writer_val.write(img + ',' + val_img_to_label[img] + '\n')
-
-    writer_test = open(labels_test, 'w')
-    writer_test.write('img,gt\n')
-    for img in sorted(test_img_to_label.keys()):
-        writer_test.write(img + ',' + test_img_to_label[img] + '\n')
+    write_to_csv(dest_filename=labels_train,
+                 image_lable_dict=train_img_to_label)
+    write_to_csv(dest_filename=labels_val,
+                 image_lable_dict=val_img_to_label)
+    write_to_csv(dest_filename=labels_test,
+                 image_lable_dict=test_img_to_label)
 
 
 if __name__ == '__main__':
@@ -93,5 +116,4 @@ if __name__ == '__main__':
           keep_orig_copy=config.keep_orig_copy,
           labels_train=config.labels_train,
           labels_val=config.labels_val,
-          labels_test=config.labels_test
-          )
+          labels_test=config.labels_test)

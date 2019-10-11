@@ -16,7 +16,10 @@ from os.path import isfile, join, isdir
 
 # getting the classes for classification
 def get_classes(folder):
-    subfolder_paths = sorted([f for f in listdir(folder) if (isdir(join(folder, f)) and '.DS_Store' not in f)])
+    subfolder_paths = sorted([
+        f for f in listdir(folder)
+        if (isdir(join(folder, f)) and '.DS_Store' not in f)
+    ])
     return subfolder_paths
 
 
@@ -24,7 +27,8 @@ def get_classes(folder):
 def get_log_csv_name(log_folder):
     now = datetime.datetime.now()
     month, day, year, hour, minute, second = now.month, now.day, now.year, now.hour, now.minute, now.second
-    return log_folder + '/log_' + str(month) + str(day) + str(year) + '_' + str(hour) + str(minute) + str(second) + '.csv'
+    return log_folder + '/log_' + str(month) + str(day) + str(
+        year) + '_' + str(hour) + str(minute) + str(second) + '.csv'
 
 
 # just get the name of images in a folder
@@ -38,7 +42,9 @@ def get_image_names(folder):
 
 # get full image paths
 def get_image_paths(folder):
-    image_paths = [join(folder, f) for f in listdir(folder) if isfile(join(folder, f))]
+    image_paths = [
+        join(folder, f) for f in listdir(folder) if isfile(join(folder, f))
+    ]
     if join(folder, '.DS_Store') in image_paths:
         image_paths.remove(join(folder, '.DS_Store'))
     image_paths = sorted(image_paths)
@@ -47,7 +53,10 @@ def get_image_paths(folder):
 
 # get subfolders
 def get_subfolder_paths(folder):
-    subfolder_paths = [join(folder, f) for f in listdir(folder) if (isdir(join(folder, f)) and '.DS_Store' not in f)]
+    subfolder_paths = [
+        join(folder, f) for f in listdir(folder)
+        if (isdir(join(folder, f)) and '.DS_Store' not in f)
+    ]
     if join(folder, '.DS_Store') in subfolder_paths:
         subfolder_paths.remove(join(folder, '.DS_Store'))
     subfolder_paths = sorted(subfolder_paths)
@@ -78,7 +87,6 @@ def basefolder(path):
 
 # get all image paths
 def get_all_image_paths(master_folder):
-
     all_paths = []
     subfolders = get_subfolder_paths(master_folder)
     if len(subfolders) > 1:
@@ -91,7 +99,10 @@ def get_all_image_paths(master_folder):
 
 # get csv paths in a folder
 def get_csv_paths(folder):
-    csv_paths = [join(folder, f) for f in listdir(folder) if isfile(join(folder, f)) and 'csv' in f]
+    csv_paths = [
+        join(folder, f) for f in listdir(folder)
+        if isfile(join(folder, f)) and 'csv' in f
+    ]
     if join(folder, '.DS_Store') in csv_paths:
         csv_paths.remove(join(folder, '.DS_Store'))
     csv_paths = list(sorted(csv_paths))
@@ -100,7 +111,6 @@ def get_csv_paths(folder):
 
 # reading labels from a csv
 def create_labels(csv_path):
-
     lines = open(csv_path, 'r').readlines()[1:]
     file_to_gt_label = {}
 
