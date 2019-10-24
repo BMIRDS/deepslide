@@ -1,0 +1,34 @@
+# Type: <subject> (<50-characters)
+
+# Body (Wrap it to 72-character)
+## What and Why you did:
+
+## The Impact of Change:
+*
+
+# Type should be one of the following:
+# * feat (new feature)
+# * fix (bug fix)
+# * docs (changes to documentation)
+# * style (formatting, missing semi colons, etc; no code change)
+# * refactor (refactoring production code)
+# * test (adding missing tests, refactoring tests; no production code change)
+# * chore (updating grunt tasks etc; no production code change)
+#
+# Example Commit Message
+# ------------------------------------------------|----------------------|
+# feat: Add FancyNormLayer to MyDeepNet
+# what: Implement a normalization layer presented in [http:~].
+# why: This layer would work better than the current norm layers.
+# * Potentially improves classfication accuracy by normalizing input to
+#   each convolution layers.
+# * The paper also reports that the layer would contribute to faster
+#   convergence with proper hyper parameter of the norm layers.
+# * As side effect, the performance may get unstable if mini batch size
+#   is small.
+# ------------------------------------------------|----------------------|
+# 72-character wrapped longer description.
+# This template is based on:
+# https://thoughtbot.com/blog/better-commit-messages-with-a-gitmessage-template
+# https://gist.github.com/Linell/bd8100c4e04348c7966d
+#
