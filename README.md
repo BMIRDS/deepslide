@@ -150,7 +150,7 @@ See `code/z_preprocessing` for some code to convert images from svs into jpg. Th
 - Did you pre-process your images? If you used raw .svs files that are more than 1GB in size, its likely that the patches are way too zoomed in to see any cell structures.
 - If you have less than 10 WSI per class in the training set, get more.
 - Normalizing color channels with custom values. You can change this in `utils_model.py`.
-- Feel free to view our end-to-end attention-based model: [https://arxiv.org/abs/1811.08513](https://arxiv.org/abs/1811.08513).
+- Feel free to view our end-to-end attention-based model in JAMA Network Open: [https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2753982](https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2753982).
 
 # Future Work
 
