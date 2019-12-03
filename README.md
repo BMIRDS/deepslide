@@ -6,12 +6,13 @@ This repository is a sliding window framework for classification of high resolut
 ![alt text](figures/figure-2-color.jpeg)
 
 ## Dependencies
-- [Python 3.6](https://www.anaconda.com/download/#macos)
+- [pandas](https://pandas.pydata.org/)
+- [Python 3.6](https://www.python.org/downloads/release/python-369/)
 - [PyTorch](https://pytorch.org/)
 - [PIL](https://pillow.readthedocs.io/en/5.3.x/)
 - [OpenCV](https://opencv.org/)
 - [Scikit-Learn](https://scikit-learn.org/stable/install.html)
-- [Scipy](https://www.scipy.org/)
+- [imageio](https://imageio.github.io/)
 - GPU
 
 # Usage
