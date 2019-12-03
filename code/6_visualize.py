@@ -1,19 +1,18 @@
-# DeepSlide
-# Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
-
-# Visualizing patch predictions with overlaid dots
-
 from utils_evaluation import visualize
+import config
 
-# visualize val set
-visualize(wsi_folder=config.wsi_val,
-          preds_folder=config.preds_val,
-          vis_folder=config.vis_val,
-          colors=config.colors)
-
-# visualize test set
-# visualize(wsi_folder=config.wsi_test,
-#             preds_folder=config.preds_test,
-#             vis_folder=config.vis_test,
-#             colors=config.colors
-#            )
+# Visualizing patch predictions with overlaid dots.
+print("+++++ Running 6_visualize.py +++++")
+print("----- Visualizing validation set -----")
+# Visualize validation set.
+visualize(wsi_folder=config.args.wsi_val,
+          preds_folder=config.args.preds_val,
+          vis_folder=config.args.vis_val)
+print("----- Finished visualizing validation set -----")
+print("----- Visualizing test set -----")
+# Visualize test set.
+visualize(wsi_folder=config.args.wsi_test,
+          preds_folder=config.args.preds_test,
+          vis_folder=config.args.vis_test)
+print("----- Finished visualizing test set -----")
+print("+++++ Finished running 6_visualize.py +++++")

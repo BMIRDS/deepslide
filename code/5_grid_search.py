@@ -1,14 +1,10 @@
-# DeepSlide
-# Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
+from utils_evaluation import grid_search
+import config
 
-# Searching over thresholds for filtering noise
-
-from utils_evaluation import grid_search, get_best_acc
-
-grid_search(threshold_search=config.threshold_search,
-            pred_folder=config.preds_val,
-            inference_folder=config.inference_val,
-            labels_csv=config.labels_val)
-
-get_best_acc(labels_csv=config.labels_val,
-             inference_folder=config.inference_val)
+# Searching over thresholds for filtering noise.
+print("+++++ Running 5_grid_search.py +++++")
+print("----- Running grid search -----")
+grid_search(pred_folder=config.args.preds_val,
+            inference_folder=config.args.inference_val)
+print("----- Finished running grid search -----")
+print("+++++ Finished running 5_grid_search.py +++++")

@@ -1,20 +1,16 @@
-# DeepSlide
-# Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
+from utils_model import get_predictions
+import config
 
-# Run the resnet on generated patches.
-
-from utils_model import get_predictions, get_predictions
-
-# validation patches
-get_predictions(patches_eval_folder=config.patches_eval_val,
-                auto_select=config.auto_select,
-                eval_model=config.eval_model,
-                checkpoints_folder=config.checkpoints_folder,
-                output_folder=config.preds_val)
-
-# test patches
-get_predictions(patches_eval_folder=config.patches_eval_test,
-                auto_select=config.auto_select,
-                eval_model=config.eval_model,
-                checkpoints_folder=config.checkpoints_folder,
-                output_folder=config.preds_test)
+# Run the ResNet on the generated patches.
+print("+++++ Running 4_test.py +++++")
+print("----- Finding validation patch predictions -----")
+# Validation patches.
+get_predictions(patches_eval_folder=config.args.patches_eval_val,
+                output_folder=config.args.preds_val)
+print("----- Finished finding validation patch predictions -----")
+print("----- Finding test patch predictions -----")
+# Test patches.
+get_predictions(patches_eval_folder=config.args.patches_eval_test,
+                output_folder=config.args.preds_test)
+print("----- Finished finding test patch predictions -----")
+print("+++++ Finished running 4_test.py +++++")
