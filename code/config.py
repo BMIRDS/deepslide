@@ -358,3 +358,21 @@ colors = [
     "red", "white", "blue", "green", "purple", "orange", "black", "pink",
     "yellow"
 ]
+
+# Print the configuration.
+# Source: https://stackoverflow.com/questions/44689546/how-to-print-out-a-dictionary-nicely-in-python/44689627
+print("\n\n\n###############     CONFIGURATION     ###############\n")
+print("\n".join(f"{k}:\t{v}" for k, v in vars(args).items()))
+print(f"device:\t{device}\n"
+      f"classes:\t{classes}\n"
+      f"num_classes:\t{num_classes}\n"
+      f"train_patches:\t{train_patches}\n"
+      f"val_patches:\t{val_patches}\n"
+      f"path_mean:\t{path_mean}\n"
+      f"path_std:\t{path_std}\n"
+      f"resume_checkpoint_path:\t{resume_checkpoint_path}\n"
+      f"log_csv:\t{log_csv}\n"
+      f"eval_model:\t{eval_model}\n"
+      f"threshold_search:\t{threshold_search}\n"
+      f"colors:\t{colors}\n")
+print("\n#####################################################\n\n\n")
