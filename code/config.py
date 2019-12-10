@@ -35,12 +35,12 @@ parser.add_argument(
 # For splitting into validation set.
 parser.add_argument("--val-wsi-per-class",
                     type=int,
-                    default=3,
+                    default=20,
                     help="Number of WSI per class to use in validation set")
 # For splitting into testing set, remaining images used in train.
 parser.add_argument("--test-wsi-per-class",
                     type=int,
-                    default=3,
+                    default=30,
                     help="Number of WSI per class to use in test set")
 # When splitting, do you want to move WSI or copy them?
 parser.add_argument(
@@ -197,7 +197,7 @@ parser.add_argument(
 # Model hyperparameters.
 parser.add_argument("--num-epochs",
                     type=int,
-                    default=10,
+                    default=20,
                     help="Number of epochs for training")
 # Choose from [18, 34, 50, 101, 152].
 parser.add_argument(
@@ -212,7 +212,7 @@ parser.add_argument("--learning-rate",
                     help="Learning rate to use for gradient descent")
 parser.add_argument("--batch-size",
                     type=int,
-                    default=32,
+                    default=16,
                     help="Mini-batch size to use for training")
 parser.add_argument("--weight-decay",
                     type=float,
@@ -220,7 +220,7 @@ parser.add_argument("--weight-decay",
                     help="Weight decay (L2 penalty) to use in optimizer")
 parser.add_argument("--learning-rate-decay",
                     type=float,
-                    default=0.95,
+                    default=0.85,
                     help="Learning rate decay amount per epoch")
 parser.add_argument("--resume-checkpoint",
                     type=bool,
@@ -354,16 +354,13 @@ threshold_search = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
 # For visualization.
 # This order is the same order as your sorted classes.
-colors = [
-    "red", "white", "blue", "green", "purple", "orange", "black", "pink",
-    "yellow"
-]
+colors = ("red", "white", "blue", "green", "purple", "orange", "black", "pink", "yellow")
 
 # Print the configuration.
 # Source: https://stackoverflow.com/questions/44689546/how-to-print-out-a-dictionary-nicely-in-python/44689627
-print("\n\n\n###############     CONFIGURATION     ###############\n")
-print("\n".join(f"{k}:\t{v}" for k, v in vars(args).items()))
-print(f"device:\t{device}\n"
+print(f"\n\n\n###############     CONFIGURATION     ###############\n"
+      f"{chr(10).join(f'{k}:{chr(9)}{v}' for k, v in vars(args).items())}"
+      f"device:\t{device}\n"
       f"classes:\t{classes}\n"
       f"num_classes:\t{num_classes}\n"
       f"train_patches:\t{train_patches}\n"
@@ -374,5 +371,5 @@ print(f"device:\t{device}\n"
       f"log_csv:\t{log_csv}\n"
       f"eval_model:\t{eval_model}\n"
       f"threshold_search:\t{threshold_search}\n"
-      f"colors:\t{colors}\n")
-print("\n#####################################################\n\n\n")
+      f"colors:\t{colors}\n"
+      f"\n#####################################################\n\n\n")

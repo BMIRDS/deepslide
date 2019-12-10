@@ -38,15 +38,20 @@ def is_purple(crop: np.ndarray) -> bool:
     Returns:
         A boolean representing whether the image is purple or not.
     """
-    pooled = block_reduce(image=crop,
-                          block_size=(crop.shape[0] // 15, crop.shape[1] // 15,
-                                      1),
-                          func=np.average)
+    block_size = (crop.shape[0] // 15, crop.shape[1] // 15, 1)
+    pooled = block_reduce(image=crop, block_size=block_size, func=np.average)
 
-    return pooled[(pooled[..., 0] > pooled[..., 1] - 10)
-                  & (pooled[..., 2] > pooled[..., 1] - 10) &
-                  (((pooled[..., 0] + pooled[..., 2]) / 2) >
-                   pooled[..., 1] + 20)].shape[0] > 100
+    # Calculate boolean arrays for determining if portion is purple.
+    (R, G, B) = (0, 1, 2)
+    cond1 = pooled[..., R] > pooled[..., G] - 10
+    cond2 = pooled[..., B] > pooled[..., G] - 10
+    cond3 = ((pooled[..., R] + pooled[..., B]) / 2) > (pooled[..., G] + 20)
+
+    # Find the indexes of pooled satisfying all 3 conditions.
+    pooled = pooled[cond1 & cond2 & cond3]
+    num_purple = pooled.shape[0]
+
+    return num_purple > 100
 
 
 ###########################################
@@ -70,7 +75,9 @@ def get_folder_size_and_num_images(folder: Path) -> Tuple[float, int]:
     file_size = 0
     for image_path in image_paths:
         file_size += image_path.stat().st_size
-    return (file_size / 1000.0 / 1000.0), len(image_paths)
+
+    file_size_mb = file_size / 1e6
+    return file_size_mb, len(image_paths)
 
 
 def get_subfolder_to_overlap(subfolders: List[Path],
@@ -99,7 +106,7 @@ def get_subfolder_to_overlap(subfolders: List[Path],
                 math.sqrt(desired_crops_per_class / (subfolder_size / 0.013)),
                 1.5))
         subfolder_to_overlap_factor[subfolder] = overlap_factor
-        print(f"{subfolder}: {subfolder_size:.2f}MB, "
+        print(f"{subfolder}: {subfolder_size}MB, "
               f"{subfolder_num_images} images, "
               f"overlap_factor={overlap_factor:.2f}")
 
@@ -174,17 +181,21 @@ def duplicate_until_n(image_paths: List[Path], n: int) -> None:
     """
     num_dupls = n - len(image_paths)
 
-    print(f"balancing {image_paths[0].parent} " f"by duplicating {num_dupls}")
+    print(f"balancing {image_paths[0].parent} by duplicating {num_dupls}")
 
     for i in range(num_dupls):
         image_path = image_paths[i % len(image_paths)]
 
+        xys = image_path.name.split("_")
+        x = xys[:-2]
+        y = xys[-2:]
+
         copyfile(src=image_path,
                  dst=Path(
                      image_path.parent,
-                     f"{'_'.join(image_path.name.split('_')[:-2])}dup"
+                     f"{'_'.join(x)}dup"
                      f"{(i // len(image_paths)) + 2}_"
-                     f"{'_'.join(image_path.name.split('_')[-2:])}"))
+                     f"{'_'.join(y)}"))
 
 
 def balance_classes(training_folder: Path) -> None:
@@ -324,8 +335,6 @@ def produce_patches(input_folder: Path, output_folder: Path,
         # Step size, same for x and y.
         step_size = int(config.args.patch_size / inverse_overlap_factor)
 
-        num_patches = 0
-
         # Create the queues for passing data back and forth.
         in_queue = Queue()
         out_queue = Queue(maxsize=-1)
@@ -353,8 +362,7 @@ def produce_patches(input_folder: Path, output_folder: Path,
         for __ in range(config.args.num_workers):
             in_queue.put(obj=None)
 
-        num_patches += sum(
-            [out_queue.get() for __ in range(x_steps * y_steps)])
+        num_patches = sum([out_queue.get() for __ in range(x_steps * y_steps)])
 
         # Join the processes as they finish.
         for p in processes:

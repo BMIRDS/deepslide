@@ -24,9 +24,7 @@ def split() -> None:
     head = shutil.copyfile if config.args.keep_orig_copy else shutil.move
 
     # Create folders.
-    for f in [
-            config.args.wsi_train, config.args.wsi_val, config.args.wsi_test
-    ]:
+    for f in (config.args.wsi_train, config.args.wsi_val, config.args.wsi_test):
         subfolders = [f.joinpath(_class) for _class in config.classes]
 
         for subfolder in subfolders:
