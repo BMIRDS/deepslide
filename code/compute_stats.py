@@ -14,17 +14,17 @@ import torch
 from PIL import Image
 from torchvision.transforms import ToTensor
 
-import config
-
 Image.MAX_IMAGE_PIXELS = None
 
 
-def compute_stats(folderpath: Path) -> Tuple[List[float], List[float]]:
+def compute_stats(folderpath: Path,
+                  image_ext: str) -> Tuple[List[float], List[float]]:
     """
     Compute the mean and standard deviation of the images found in folderpath.
 
     Args:
         folderpath: Path containing images.
+        image_ext: Extension of the image files.
 
     Returns:
         A tuple containing the mean and standard deviation for the images over the channel, height, and width axes.
@@ -48,7 +48,7 @@ def compute_stats(folderpath: Path) -> Tuple[List[float], List[float]]:
             """
             self.data = []
 
-            for file in folder.rglob(f"*{config.args.image_ext}"):
+            for file in folder.rglob(f"*{image_ext}"):
                 if not file.name.startswith("."):
                     self.data.append(file)
 
