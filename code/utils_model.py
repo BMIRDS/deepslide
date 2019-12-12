@@ -11,7 +11,7 @@ import operator
 import random
 import time
 from pathlib import Path
-from typing import (Dict, IO, List)
+from typing import (Dict, IO, List, Tuple)
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,6 @@ from PIL import Image
 from torch.optim import lr_scheduler
 from torchvision import (datasets, transforms)
 
-import config
 from utils import (get_image_paths, get_subfolder_paths)
 
 ###########################################
@@ -32,15 +31,18 @@ from utils import (get_image_paths, get_subfolder_paths)
 
 
 def calculate_confusion_matrix(all_labels: np.ndarray,
-                               all_predicts: np.ndarray) -> None:
+                               all_predicts: np.ndarray, classes: List[str],
+                               num_classes: int) -> None:
     """
     Prints the confusion matrix from the given data.
 
     Args:
         all_labels: The ground truth labels.
         all_predicts: The predicted labels.
+        classes: Names of the classes in the dataset.
+        num_classes: Number of classes in the dataset.
     """
-    remap_classes = {x: config.classes[x] for x in range(config.num_classes)}
+    remap_classes = {x: classes[x] for x in range(num_classes)}
 
     # Set print options.
     # Sources:
@@ -50,29 +52,29 @@ def calculate_confusion_matrix(all_labels: np.ndarray,
     pd.options.display.float_format = "{:.2f}".format
     pd.options.display.width = 0
 
-    cm = pd.crosstab(index=pd.Series(pd.Categorical(
-        pd.Series(all_labels).replace(remap_classes),
-        categories=config.classes),
-                                     name="Actual"),
-                     columns=pd.Series(pd.Categorical(
-                         pd.Series(all_predicts).replace(remap_classes),
-                         categories=config.classes),
-                                       name="Predicted"),
-                     normalize="index")
+    actual = pd.Series(pd.Categorical(
+        pd.Series(all_labels).replace(remap_classes), categories=classes),
+                       name="Actual")
+
+    predicted = pd.Series(pd.Categorical(
+        pd.Series(all_predicts).replace(remap_classes), categories=classes),
+                          name="Predicted")
+
+    cm = pd.crosstab(index=actual, columns=predicted, normalize="index")
 
     cm.style.hide_index()
     print(cm)
 
 
 class Random90Rotation:
-    def __init__(self, degrees: List[int] = None) -> None:
+    def __init__(self, degrees: Tuple[int] = None) -> None:
         """
         Randomly rotate the image for training. Credits to Naofumi Tomita.
 
         Args:
             degrees: Degrees available for rotation.
         """
-        self.degrees = [0, 90, 180, 270] if (degrees is None) else degrees
+        self.degrees = (0, 90, 180, 270) if (degrees is None) else degrees
 
     def __call__(self, im: Image) -> Image:
         """
@@ -87,32 +89,49 @@ class Random90Rotation:
         return im.rotate(angle=random.sample(population=self.degrees, k=1)[0])
 
 
-def create_model() -> torchvision.models.resnet.ResNet:
+def create_model(num_layers: int, num_classes: int,
+                 pretrain: bool) -> torchvision.models.resnet.ResNet:
     """
     Instantiate the ResNet model.
+
+    Args:
+        num_layers: Number of layers to use in the ResNet model from [18, 34, 50, 101, 152].
+        num_classes: Number of classes in the dataset.
+        pretrain: Use pretrained ResNet weights.
 
     Returns:
         The instantiated ResNet model with the requested parameters.
     """
-    assert config.args.num_layers in [
+    assert num_layers in (
         18, 34, 50, 101, 152
-    ], f"Invalid number of ResNet Layers.  " \
-       f"Must be one of [18, 34, 50, 101, 152] and not {config.args.num_layers}"
-    model_constructor = getattr(torchvision.models,
-                                f"resnet{config.args.num_layers}")
-    model = model_constructor(num_classes=config.num_classes)
+    ), f"Invalid number of ResNet Layers. Must be one of [18, 34, 50, 101, 152] and not {num_layers}"
+    model_constructor = getattr(torchvision.models, f"resnet{num_layers}")
+    model = model_constructor(num_classes=num_classes)
 
-    if config.args.pretrain:
+    if pretrain:
         pretrained = model_constructor(pretrained=True).state_dict()
-        if config.num_classes != pretrained["fc.weight"].size(0):
+        if num_classes != pretrained["fc.weight"].size(0):
             del pretrained["fc.weight"], pretrained["fc.bias"]
         model.load_state_dict(state_dict=pretrained, strict=False)
     return model
 
 
-def get_data_transforms() -> Dict[str, torchvision.transforms.Compose]:
+def get_data_transforms(color_jitter_brightness: float,
+                        color_jitter_contrast: float,
+                        color_jitter_saturation: float,
+                        color_jitter_hue: float, path_mean: List[float],
+                        path_std: List[float]
+                        ) -> Dict[str, torchvision.transforms.Compose]:
     """
     Sets up the dataset transforms for training and validation.
+
+    Args:
+        color_jitter_brightness: Random brightness jitter to use in data augmentation for ColorJitter() transform.
+        color_jitter_contrast: Random contrast jitter to use in data augmentation for ColorJitter() transform.
+        color_jitter_saturation: Random saturation jitter to use in data augmentation for ColorJitter() transform.
+        color_jitter_hue: Random hue jitter to use in data augmentation for ColorJitter() transform.
+        path_mean: Means of the WSIs for each dimension.
+        path_std: Standard deviations of the WSIs for each dimension.
 
     Returns:
         A dictionary mapping training and validation strings to data transforms.
@@ -120,43 +139,62 @@ def get_data_transforms() -> Dict[str, torchvision.transforms.Compose]:
     return {
         "train":
         transforms.Compose(transforms=[
-            transforms.ColorJitter(
-                brightness=config.args.color_jitter_brightness,
-                contrast=config.args.color_jitter_contrast,
-                saturation=config.args.color_jitter_saturation,
-                hue=config.args.color_jitter_hue),
+            transforms.ColorJitter(brightness=color_jitter_brightness,
+                                   contrast=color_jitter_contrast,
+                                   saturation=color_jitter_saturation,
+                                   hue=color_jitter_hue),
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
             Random90Rotation(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=config.path_mean, std=config.path_std)
+            transforms.Normalize(mean=path_mean, std=path_std)
         ]),
         "val":
         transforms.Compose(transforms=[
             transforms.ToTensor(),
-            transforms.Normalize(mean=config.path_mean, std=config.path_std)
+            transforms.Normalize(mean=path_mean, std=path_std)
         ])
     }
 
 
-def print_params() -> None:
+def print_params(train_folder: Path, num_epochs: int, num_layers: int,
+                 learning_rate: float, batch_size: int, weight_decay: float,
+                 learning_rate_decay: float, resume_checkpoint: bool,
+                 resume_checkpoint_path: Path, save_interval: int,
+                 checkpoints_folder: Path, pretrain: bool,
+                 log_csv: Path) -> None:
     """
     Print the configuration of the model.
+
+    Args:
+        train_folder: Location of the automatically built training input folder.
+        num_epochs: Number of epochs for training.
+        num_layers: Number of layers to use in the ResNet model from [18, 34, 50, 101, 152].
+        learning_rate: Learning rate to use for gradient descent.
+        batch_size: Mini-batch size to use for training.
+        weight_decay: Weight decay (L2 penalty) to use in optimizer.
+        learning_rate_decay: Learning rate decay amount per epoch.
+        resume_checkpoint: Resume model from checkpoint file.
+        resume_checkpoint_path: Path to the checkpoint file for resuming training.
+        save_interval: Number of epochs between saving checkpoints.
+        checkpoints_folder: Directory to save model checkpoints to.
+        pretrain: Use pretrained ResNet weights.
+        log_csv: Name of the CSV file containing the logs.
     """
-    print(f"train_folder: {config.args.train_folder}\n"
-          f"num_epochs: {config.args.num_epochs}\n"
-          f"num_layers: {config.args.num_layers}\n"
-          f"learning_rate: {config.args.learning_rate}\n"
-          f"batch_size: {config.args.batch_size}\n"
-          f"weight_decay: {config.args.weight_decay}\n"
-          f"learning_rate_decay: {config.args.learning_rate_decay}\n"
-          f"resume_checkpoint: {config.args.resume_checkpoint}\n"
+    print(f"train_folder: {train_folder}\n"
+          f"num_epochs: {num_epochs}\n"
+          f"num_layers: {num_layers}\n"
+          f"learning_rate: {learning_rate}\n"
+          f"batch_size: {batch_size}\n"
+          f"weight_decay: {weight_decay}\n"
+          f"learning_rate_decay: {learning_rate_decay}\n"
+          f"resume_checkpoint: {resume_checkpoint}\n"
           f"resume_checkpoint_path (only if resume_checkpoint is true): "
-          f"{config.resume_checkpoint_path}\n"
-          f"save_interval: {config.args.save_interval}\n"
-          f"output in checkpoints_folder: {config.args.checkpoints_folder}\n"
-          f"pretrain: {config.args.pretrain}\n"
-          f"log_csv: {config.log_csv}\n\n")
+          f"{resume_checkpoint_path}\n"
+          f"save_interval: {save_interval}\n"
+          f"output in checkpoints_folder: {checkpoints_folder}\n"
+          f"pretrain: {pretrain}\n"
+          f"log_csv: {log_csv}\n\n")
 
 
 ###########################################
@@ -169,7 +207,10 @@ def train_helper(model: torchvision.models.resnet.ResNet,
                  dataset_sizes: Dict[str, int],
                  criterion: torch.nn.modules.loss, optimizer: torch.optim,
                  scheduler: torch.optim.lr_scheduler, num_epochs: int,
-                 writer: IO) -> None:
+                 writer: IO, device: torch.device, total_epochs: int,
+                 batch_size: int, save_interval: int, checkpoints_folder: Path,
+                 num_layers: int, classes: List[str],
+                 num_classes: int) -> None:
     """
     Function for training ResNet.
 
@@ -180,8 +221,16 @@ def train_helper(model: torchvision.models.resnet.ResNet,
         criterion: Metric used for calculating loss.
         optimizer: Optimizer to use for gradient descent.
         scheduler: Scheduler to use for learning rate decay.
-        num_epochs: Number of epochs to train the network.
+        num_epochs: Starting epoch for training.
         writer: Writer to write logging information.
+        device: Device to use for running model.
+        total_epochs: Total number of epochs to train for.
+        batch_size: Mini-batch size to use for training.
+        save_interval: Number of epochs between saving checkpoints.
+        checkpoints_folder: Directory to save model checkpoints to.
+        num_layers: Number of layers to use in the ResNet model from [18, 34, 50, 101, 152].
+        classes: Names of the classes in the dataset.
+        num_classes: Number of classes in the dataset.
     """
     since = time.time()
 
@@ -189,20 +238,16 @@ def train_helper(model: torchvision.models.resnet.ResNet,
     # Do this outside the loop since it will be written over entirely at each
     # epoch and doesn't need to be reallocated each time.
     train_all_labels = torch.empty(size=(dataset_sizes["train"], ),
-                                   dtype=torch.long,
-                                   device=config.device)
+                                   dtype=torch.long).cpu()
     train_all_predicts = torch.empty(size=(dataset_sizes["train"], ),
-                                     dtype=torch.long,
-                                     device=config.device)
+                                     dtype=torch.long).cpu()
     val_all_labels = torch.empty(size=(dataset_sizes["val"], ),
-                                 dtype=torch.long,
-                                 device=config.device)
+                                 dtype=torch.long).cpu()
     val_all_predicts = torch.empty(size=(dataset_sizes["val"], ),
-                                   dtype=torch.long,
-                                   device=config.device)
+                                   dtype=torch.long).cpu()
 
     # Train for specified number of epochs.
-    for epoch in range(num_epochs, config.args.num_epochs):
+    for epoch in range(num_epochs, total_epochs):
 
         # Training phase.
         model.train(mode=True)
@@ -212,8 +257,8 @@ def train_helper(model: torchvision.models.resnet.ResNet,
 
         # Train over all training data.
         for idx, (inputs, labels) in enumerate(dataloaders["train"]):
-            train_inputs = inputs.to(device=config.device)
-            train_labels = labels.to(device=config.device)
+            train_inputs = inputs.to(device=device)
+            train_labels = labels.to(device=device)
             optimizer.zero_grad()
 
             # Forward and backpropagation.
@@ -230,14 +275,16 @@ def train_helper(model: torchvision.models.resnet.ResNet,
             train_running_corrects += torch.sum(
                 train_preds == train_labels.data, dtype=torch.double)
 
-            train_all_labels[idx * config.args.batch_size:(idx + 1) *
-                             config.args.batch_size] = train_labels.data
-            train_all_predicts[idx * config.args.batch_size:(idx + 1) *
-                               config.args.batch_size] = train_preds
+            start = idx * batch_size
+            end = start + batch_size
 
-        calculate_confusion_matrix(
-            all_labels=train_all_labels.cpu().numpy(),
-            all_predicts=train_all_predicts.cpu().numpy())
+            train_all_labels[start:end] = train_labels.detach().cpu()
+            train_all_predicts[start:end] = train_preds.detach().cpu()
+
+        calculate_confusion_matrix(all_labels=train_all_labels.numpy(),
+                                   all_predicts=train_all_predicts.numpy(),
+                                   classes=classes,
+                                   num_classes=num_classes)
 
         # Store training diagnostics.
         train_loss = train_running_loss / dataset_sizes["train"]
@@ -254,8 +301,8 @@ def train_helper(model: torchvision.models.resnet.ResNet,
 
         # Feed forward over all the validation data.
         for idx, (val_inputs, val_labels) in enumerate(dataloaders["val"]):
-            val_inputs = val_inputs.to(device=config.device)
-            val_labels = val_labels.to(device=config.device)
+            val_inputs = val_inputs.to(device=device)
+            val_labels = val_labels.to(device=device)
 
             # Feed forward.
             with torch.set_grad_enabled(mode=False):
@@ -268,13 +315,16 @@ def train_helper(model: torchvision.models.resnet.ResNet,
             val_running_corrects += torch.sum(val_preds == val_labels.data,
                                               dtype=torch.double)
 
-            val_all_labels[idx * config.args.batch_size:(idx + 1) *
-                           config.args.batch_size] = val_labels.data
-            val_all_predicts[idx * config.args.batch_size:(idx + 1) *
-                             config.args.batch_size] = val_preds
+            start = idx * batch_size
+            end = start + batch_size
 
-        calculate_confusion_matrix(all_labels=val_all_labels.cpu().numpy(),
-                                   all_predicts=val_all_predicts.cpu().numpy())
+            val_all_labels[start:end] = val_labels.detach().cpu()
+            val_all_predicts[start:end] = val_preds.detach().cpu()
+
+        calculate_confusion_matrix(all_labels=val_all_labels.numpy(),
+                                   all_predicts=val_all_predicts.numpy(),
+                                   classes=classes,
+                                   num_classes=num_classes)
 
         # Store validation diagnostics.
         val_loss = val_running_loss / dataset_sizes["val"]
@@ -290,9 +340,9 @@ def train_helper(model: torchvision.models.resnet.ResNet,
             current_lr = group["lr"]
 
         # Remaining things related to training.
-        if epoch % config.args.save_interval == 0:
-            epoch_output_path = config.args.checkpoints_folder.joinpath(
-                f"resnet{config.args.num_layers}_e{epoch}_va{val_acc:.5f}.pt")
+        if epoch % save_interval == 0:
+            epoch_output_path = checkpoints_folder.joinpath(
+                f"resnet{num_layers}_e{epoch}_va{val_acc:.5f}.pt")
 
             # Confirm the output directory exists.
             epoch_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -322,61 +372,114 @@ def train_helper(model: torchvision.models.resnet.ResNet,
           f"{(time.time() - since) // 60:.2f} minutes")
 
 
-def train_resnet() -> None:
+def train_resnet(
+        train_folder: Path, batch_size: int, num_workers: int,
+        device: torch.device, classes: List[str], learning_rate: float,
+        weight_decay: float, learning_rate_decay: float,
+        resume_checkpoint: bool, resume_checkpoint_path: Path, log_csv: Path,
+        color_jitter_brightness: float, color_jitter_contrast: float,
+        color_jitter_hue: float, color_jitter_saturation: float,
+        path_mean: List[float], path_std: List[float], num_classes: int,
+        num_layers: int, pretrain: bool, checkpoints_folder: Path,
+        total_epochs: int, save_interval: int) -> None:
     """
     Main function for training ResNet.
+
+    Args:
+        train_folder: Location of the automatically built training input folder.
+        batch_size: Mini-batch size to use for training.
+        num_workers: Number of workers to use for IO.
+        device: Device to use for running model.
+        classes: Names of the classes in the dataset.
+        learning_rate: Learning rate to use for gradient descent.
+        weight_decay: Weight decay (L2 penalty) to use in optimizer.
+        learning_rate_decay: Learning rate decay amount per epoch.
+        resume_checkpoint: Resume model from checkpoint file.
+        resume_checkpoint_path: Path to the checkpoint file for resuming training.
+        log_csv: Name of the CSV file containing the logs.
+        color_jitter_brightness: Random brightness jitter to use in data augmentation for ColorJitter() transform.
+        color_jitter_contrast: Random contrast jitter to use in data augmentation for ColorJitter() transform.
+        color_jitter_hue: Random hue jitter to use in data augmentation for ColorJitter() transform.
+        color_jitter_saturation: Random saturation to use in data augmentation for ColorJitter() transform.
+        path_mean: Means of the WSIs for each dimension.
+        path_std: Standard deviations of the WSIs for each dimension.
+        num_classes: Number of classes in the dataset.
+        num_layers: Number of layers to use in the ResNet model from [18, 34, 50, 101, 152].
+        pretrain: Use pretrained ResNet weights.
+        checkpoints_folder: Directory to save model checkpoints to.
+        total_epochs: Number of epochs for training.
+        save_interval: Number of epochs between saving checkpoints.
     """
     # Loading in the data.
-    data_transforms = get_data_transforms()
+    data_transforms = get_data_transforms(
+        color_jitter_brightness=color_jitter_brightness,
+        color_jitter_contrast=color_jitter_contrast,
+        color_jitter_hue=color_jitter_hue,
+        color_jitter_saturation=color_jitter_saturation,
+        path_mean=path_mean,
+        path_std=path_std)
 
     image_datasets = {
-        x: datasets.ImageFolder(root=str(config.args.train_folder.joinpath(x)),
+        x: datasets.ImageFolder(root=str(train_folder.joinpath(x)),
                                 transform=data_transforms[x])
-        for x in ["train", "val"]
+        for x in ("train", "val")
     }
 
     dataloaders = {
         x: torch.utils.data.DataLoader(dataset=image_datasets[x],
-                                       batch_size=config.args.batch_size,
+                                       batch_size=batch_size,
                                        shuffle=(x is "train"),
-                                       num_workers=config.args.num_workers)
-        for x in ["train", "val"]
+                                       num_workers=num_workers)
+        for x in ("train", "val")
     }
-    dataset_sizes = {x: len(image_datasets[x]) for x in ["train", "val"]}
+    dataset_sizes = {x: len(image_datasets[x]) for x in ("train", "val")}
 
-    print(
-        f"{len(config.classes)} classes: {config.classes}\n"
-        f"num train images {len(dataloaders['train']) * config.args.batch_size}\n"
-        f"num val images {len(dataloaders['val']) * config.args.batch_size}\n"
-        f"CUDA is_available: {torch.cuda.is_available()}")
+    print(f"{num_classes} classes: {classes}\n"
+          f"num train images {len(dataloaders['train']) * batch_size}\n"
+          f"num val images {len(dataloaders['val']) * batch_size}\n"
+          f"CUDA is_available: {torch.cuda.is_available()}")
 
-    model = create_model()
-    model = model.to(device=config.device)
+    model = create_model(num_classes=num_classes,
+                         num_layers=num_layers,
+                         pretrain=pretrain)
+    model = model.to(device=device)
     optimizer = optim.Adam(params=model.parameters(),
-                           lr=config.args.learning_rate,
-                           weight_decay=config.args.weight_decay)
-    scheduler = lr_scheduler.ExponentialLR(
-        optimizer=optimizer, gamma=config.args.learning_rate_decay)
+                           lr=learning_rate,
+                           weight_decay=weight_decay)
+    scheduler = lr_scheduler.ExponentialLR(optimizer=optimizer,
+                                           gamma=learning_rate_decay)
 
     # Initialize the model.
-    if config.args.resume_checkpoint:
-        ckpt = torch.load(f=config.resume_checkpoint_path)
+    if resume_checkpoint:
+        ckpt = torch.load(f=resume_checkpoint_path)
         model.load_state_dict(state_dict=ckpt["model_state_dict"])
         optimizer.load_state_dict(state_dict=ckpt["optimizer_state_dict"])
         scheduler.load_state_dict(state_dict=ckpt["scheduler_state_dict"])
         epoch = ckpt["epoch"]
-        print(f"model loaded from {config.resume_checkpoint_path}")
+        print(f"model loaded from {resume_checkpoint_path}")
     else:
         epoch = 0
 
     # Print the model hyperparameters.
-    print_params()
+    print_params(batch_size=batch_size,
+                 checkpoints_folder=checkpoints_folder,
+                 learning_rate=learning_rate,
+                 learning_rate_decay=learning_rate_decay,
+                 log_csv=log_csv,
+                 num_epochs=total_epochs,
+                 num_layers=num_layers,
+                 pretrain=pretrain,
+                 resume_checkpoint=resume_checkpoint,
+                 resume_checkpoint_path=resume_checkpoint_path,
+                 save_interval=save_interval,
+                 train_folder=train_folder,
+                 weight_decay=weight_decay)
 
     # Logging the model after every epoch.
     # Confirm the output directory exists.
-    config.log_csv.parent.mkdir(parents=True, exist_ok=True)
+    log_csv.parent.mkdir(parents=True, exist_ok=True)
 
-    with config.log_csv.open(mode="w") as writer:
+    with log_csv.open(mode="w") as writer:
         writer.write("epoch,train_loss,train_acc,val_loss,val_acc\n")
         # Train the model.
         train_helper(model=model,
@@ -386,7 +489,15 @@ def train_resnet() -> None:
                      optimizer=optimizer,
                      scheduler=scheduler,
                      num_epochs=epoch,
-                     writer=writer)
+                     writer=writer,
+                     batch_size=batch_size,
+                     checkpoints_folder=checkpoints_folder,
+                     device=device,
+                     num_layers=num_layers,
+                     save_interval=save_interval,
+                     total_epochs=total_epochs,
+                     classes=classes,
+                     num_classes=num_classes)
 
 
 ###########################################
@@ -425,32 +536,47 @@ def get_best_model(checkpoints_folder: Path) -> str:
                key=operator.itemgetter(1))[0]
 
 
-def get_predictions(patches_eval_folder: Path, output_folder: Path) -> None:
+def get_predictions(patches_eval_folder: Path, output_folder: Path,
+                    checkpoints_folder: Path, auto_select: bool,
+                    eval_model: Path, device: torch.device, classes: List[str],
+                    num_classes: int, path_mean: List[float],
+                    path_std: List[float], num_layers: int, pretrain: bool,
+                    batch_size: int, num_workers: int) -> None:
     """
     Main function for running the model on all of the generated patches.
 
     Args:
         patches_eval_folder: Folder containing patches to evaluate on.
         output_folder: Folder to save the model results to.
+        checkpoints_folder: Directory to save model checkpoints to.
+        auto_select: Automatically select the model with the highest validation accuracy,
+        eval_model: Path to the model with the highest validation accuracy.
+        device: Device to use for running model.
+        classes: Names of the classes in the dataset.
+        num_classes: Number of classes in the dataset.
+        path_mean: Means of the WSIs for each dimension.
+        path_std: Standard deviations of the WSIs for each dimension.
+        num_layers: Number of layers to use in the ResNet model from [18, 34, 50, 101, 152].
+        pretrain: Use pretrained ResNet weights.
+        batch_size: Mini-batch size to use for training.
+        num_workers: Number of workers to use for IO.
     """
     # Initialize the model.
     model_path = get_best_model(
-        checkpoints_folder=config.args.checkpoints_folder
-    ) if config.args.auto_select else config.eval_model
+        checkpoints_folder=checkpoints_folder) if auto_select else eval_model
 
-    model = create_model()
+    model = create_model(num_classes=num_classes,
+                         num_layers=num_layers,
+                         pretrain=pretrain)
     ckpt = torch.load(f=model_path)
     model.load_state_dict(state_dict=ckpt["model_state_dict"])
-    model = model.to(device=config.device)
+    model = model.to(device=device)
 
     model.train(mode=False)
     print(f"model loaded from {model_path}")
 
     # For outputting the predictions.
-    class_num_to_class = {
-        i: config.classes[i]
-        for i in range(len(config.classes))
-    }
+    class_num_to_class = {i: classes[i] for i in range(num_classes)}
 
     start = time.time()
     # Load the data for each folder.
@@ -463,19 +589,26 @@ def get_predictions(patches_eval_folder: Path, output_folder: Path) -> None:
     # For each WSI.
     for image_folder in image_folders:
 
-        # Load the image dataset.
-        dataloader = torch.utils.data.DataLoader(
-            dataset=datasets.ImageFolder(
-                root=str(image_folder),
-                transform=transforms.Compose(transforms=[
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=config.path_mean,
-                                         std=config.path_std)
-                ])),
-            batch_size=config.args.batch_size,
-            shuffle=False,
-            num_workers=config.args.num_workers)
-        num_test_image_windows = len(dataloader) * config.args.batch_size
+        # Temporary fix. Need not to make folders with no crops.
+        try:
+            # Load the image dataset.
+            dataloader = torch.utils.data.DataLoader(
+                dataset=datasets.ImageFolder(
+                    root=str(image_folder),
+                    transform=transforms.Compose(transforms=[
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=path_mean, std=path_std)
+                    ])),
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=num_workers)
+        except RuntimeError:
+            print(
+                "WARNING: One of the image directories is empty. Skipping this directory."
+            )
+            continue
+
+        num_test_image_windows = len(dataloader) * batch_size
 
         # Load the image names so we know the coordinates of the patches we are predicting.
         image_folder = image_folder.joinpath(image_folder.name)
@@ -490,13 +623,12 @@ def get_predictions(patches_eval_folder: Path, output_folder: Path) -> None:
 
             # Loop through all of the patches.
             for batch_num, (test_inputs, test_labels) in enumerate(dataloader):
-                batch_window_names = window_names[
-                    batch_num *
-                    config.args.batch_size:batch_num * config.args.batch_size +
-                    config.args.batch_size]
+                batch_window_names = window_names[batch_num *
+                                                  batch_size:batch_num *
+                                                  batch_size + batch_size]
 
                 confidences, test_preds = torch.max(nn.Softmax(dim=1)(model(
-                    test_inputs.to(device=config.device))),
+                    test_inputs.to(device=device))),
                                                     dim=1)
                 for i in range(test_preds.shape[0]):
                     # Find coordinates and predicted class.

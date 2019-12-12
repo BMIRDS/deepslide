@@ -145,6 +145,20 @@ parser.add_argument(
     default=True,
     help="Only look for purple histopathology images and filter whitespace")
 
+# Number of purple points for region to be considered purple.
+parser.add_argument(
+    "--purple-threshold",
+    type=int,
+    default=100,
+    help="Number of purple points for region to be considered purple.")
+
+# Scalar to use for reducing image to check for purple.
+parser.add_argument(
+    "--purple-scale-size",
+    type=int,
+    default=15,
+    help="Scalar to use for reducing image to check for purple.")
+
 # Sliding window overlap factor (for testing).
 # For generating patches during the training phase, we slide a window to overlap by some factor.
 # Must be an integer. 1 means no overlap, 2 means overlap by 1/2, 3 means overlap by 1/3.
@@ -154,10 +168,25 @@ parser.add_argument("--slide-overlap",
                     default=3,
                     help="Sliding window overlap factor for the testing phase")
 
+# Overlap factor to use when generating validation patches.
+parser.add_argument(
+    "--gen-val-patches-overlap-factor",
+    type=float,
+    default=1.5,
+    help="Overlap factor to use when generating validation patches.")
+
 parser.add_argument("--image-ext",
                     type=str,
                     default="jpg",
                     help="Image extension for saving patches")
+
+# Produce patches for testing and validation by folder.  The code only works
+# for now when testing and validation are split by folder.
+parser.add_argument(
+    "--by-folder",
+    type=bool,
+    default=True,
+    help="Produce patches for testing and validation by folder.")
 
 #########################################
 #               TRANSFORM               #
@@ -338,7 +367,8 @@ train_patches = args.train_folder.joinpath("train")
 val_patches = args.train_folder.joinpath("val")
 
 # Compute the mean and standard deviation for the given set of WSI for normalization.
-path_mean, path_std = compute_stats(folderpath=args.all_wsi)
+path_mean, path_std = compute_stats(folderpath=args.all_wsi,
+                                    image_ext=args.image_ext)
 
 # Only used is resume_checkpoint is True.
 resume_checkpoint_path = args.checkpoints_folder.joinpath(args.checkpoint_file)
@@ -350,14 +380,17 @@ log_csv = get_log_csv_name(log_folder=args.log_folder)
 eval_model = args.checkpoints_folder.joinpath(args.checkpoint_file)
 
 # Find the best threshold for filtering noise (discard patches with a confidence less than this threshold).
-threshold_search = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+threshold_search = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 
 # For visualization.
 # This order is the same order as your sorted classes.
-colors = ("red", "white", "blue", "green", "purple", "orange", "black", "pink", "yellow")
+colors = ("red", "white", "blue", "green", "purple", "orange", "black", "pink",
+          "yellow")
 
 # Print the configuration.
 # Source: https://stackoverflow.com/questions/44689546/how-to-print-out-a-dictionary-nicely-in-python/44689627
+# chr(10) and chr(9) are ways of going around the f-string limitation of
+# not allowing the '\' character inside.
 print(f"\n\n\n###############     CONFIGURATION     ###############\n"
       f"{chr(10).join(f'{k}:{chr(9)}{v}' for k, v in vars(args).items())}"
       f"device:\t{device}\n"
