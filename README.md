@@ -1,10 +1,6 @@
 # DeepSlide: A Sliding Window Framework for Classification of High Resolution Microscopy Images (Whole-Slide Images)
 
-This repository is a sliding window framework for classification of high resolution whole-slide images, often called microscopy or histopathology images. 
-This is also the code for the paper 
-[Pathologist-level Classification of Histologic Patterns on Resected Lung Adenocarcinoma Slides with Deep Neural Networks](https://www.nature.com/articles/s41598-019-40041-7).
- For a practical guide and implementation tips, see the Medium post 
- [Classification of Histopathology Images with Deep Learning: A Practical Guide](https://medium.com/health-data-science/classification-of-histopathology-images-with-deep-learning-a-practical-guide-2e3ffd6d59c5). 
+This repository is a sliding window framework for classification of high resolution whole-slide images, often called microscopy or histopathology images. This is also the code for the paper [Pathologist-level Classification of Histologic Patterns on Resected Lung Adenocarcinoma Slides with Deep Neural Networks](https://www.nature.com/articles/s41598-019-40041-7). For a practical guide and implementation tips, see the Medium post [Classification of Histopathology Images with Deep Learning: A Practical Guide](https://medium.com/health-data-science/classification-of-histopathology-images-with-deep-learning-a-practical-guide-2e3ffd6d59c5). 
 
 
 ![alt text](figures/figure-2-color.jpeg)
@@ -21,14 +17,11 @@ to speed up patch creation.
 - Increased efficiency of code by rewriting inefficient code.
 
 ## Known Issues and Limitations
-- Patch creation code doesn't find any patches in images that are slightly larger
-than the specified patch size.
+- Patch creation code doesn't find any patches in images that are slightly larger than the specified patch size.
 - Only 1 GPU supported.
 - Should work, but not tested on Windows.
-- In cases where no crops are found for an image, empty directories are created.
-Current workaround uses `try` and `except` statements to catch errors.
-- Image reading code expects colors to be in the RGB space. Current workaround
-is to keep first 3 channels.
+- In cases where no crops are found for an image, empty directories are created. Current workaround uses `try` and `except` statements to catch errors.
+- Image reading code expects colors to be in the RGB space. Current workaround is to keep first 3 channels.
 
 ## Requirements
 - [imageio](https://pypi.org/project/imageio/)
@@ -49,6 +42,9 @@ is to keep first 3 channels.
 # Usage
 
 Take a look at `code/config.py` before you begin to get a feel for what parameters can be changed.
+
+## Note on Expected WSI Input
+We expect the WSI input to be at the crop or tissue level, rather than the entire WSI. While the code will still work if entire WSIs are provided, the performance will likely be bad.
 
 ## 1. Train-Val-Test Split:
 
@@ -213,8 +209,7 @@ If you have utter trust in this code and do not want to see the outputs at each 
 sh code/run_all.sh
 ```
 
-If you want to run all code and change the default parameters in `code/config.py`,
-run
+If you want to run all code and change the default parameters in `code/config.py`, run
 ```
 python code/run_all.py
 ```
@@ -229,7 +224,7 @@ See `code/z_preprocessing` for some code to convert images from svs into jpg. Th
 # Still not working? Consider the following...
 
 - Ask a pathologist to look at your visualizations.
-- Make your own heuristic for aggregating patch predictions to find WSI classification. Often, a slide thats 20% abnormal and 80% normal should be classified as abnormal.
+- Make your own heuristic for aggregating patch predictions to determine the WSI-level classification. Often, a slide thats 20% abnormal and 80% normal should be classified as abnormal.
 - If each WSI can have multiple types of lesions/labels, you may need to annotate bounding boxes around these.
 - Did you pre-process your images? If you used raw .svs files that are more than 1GB in size, its likely that the patches are way too zoomed in to see any cell structures.
 - If you have less than 10 WSI per class in the training set, obtain more.
