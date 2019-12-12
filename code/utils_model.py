@@ -207,7 +207,7 @@ def train_helper(model: torchvision.models.resnet.ResNet,
                  dataset_sizes: Dict[str, int],
                  criterion: torch.nn.modules.loss, optimizer: torch.optim,
                  scheduler: torch.optim.lr_scheduler, num_epochs: int,
-                 writer: IO, device: torch.device, total_epochs: int,
+                 writer: IO, device: torch.device, start_epoch: int,
                  batch_size: int, save_interval: int, checkpoints_folder: Path,
                  num_layers: int, classes: List[str],
                  num_classes: int) -> None:
@@ -221,10 +221,10 @@ def train_helper(model: torchvision.models.resnet.ResNet,
         criterion: Metric used for calculating loss.
         optimizer: Optimizer to use for gradient descent.
         scheduler: Scheduler to use for learning rate decay.
-        num_epochs: Starting epoch for training.
+        start_epoch: Starting epoch for training.
         writer: Writer to write logging information.
         device: Device to use for running model.
-        total_epochs: Total number of epochs to train for.
+        num_epochs: Total number of epochs to train for.
         batch_size: Mini-batch size to use for training.
         save_interval: Number of epochs between saving checkpoints.
         checkpoints_folder: Directory to save model checkpoints to.
@@ -247,7 +247,7 @@ def train_helper(model: torchvision.models.resnet.ResNet,
                                    dtype=torch.long).cpu()
 
     # Train for specified number of epochs.
-    for epoch in range(num_epochs, total_epochs):
+    for epoch in range(start_epoch, num_epochs):
 
         # Training phase.
         model.train(mode=True)
@@ -381,7 +381,7 @@ def train_resnet(
         color_jitter_hue: float, color_jitter_saturation: float,
         path_mean: List[float], path_std: List[float], num_classes: int,
         num_layers: int, pretrain: bool, checkpoints_folder: Path,
-        total_epochs: int, save_interval: int) -> None:
+        num_epochs: int, save_interval: int) -> None:
     """
     Main function for training ResNet.
 
@@ -400,14 +400,14 @@ def train_resnet(
         color_jitter_brightness: Random brightness jitter to use in data augmentation for ColorJitter() transform.
         color_jitter_contrast: Random contrast jitter to use in data augmentation for ColorJitter() transform.
         color_jitter_hue: Random hue jitter to use in data augmentation for ColorJitter() transform.
-        color_jitter_saturation: Random saturation to use in data augmentation for ColorJitter() transform.
+        color_jitter_saturation: Random saturation jitter to use in data augmentation for ColorJitter() transform.
         path_mean: Means of the WSIs for each dimension.
         path_std: Standard deviations of the WSIs for each dimension.
         num_classes: Number of classes in the dataset.
         num_layers: Number of layers to use in the ResNet model from [18, 34, 50, 101, 152].
         pretrain: Use pretrained ResNet weights.
         checkpoints_folder: Directory to save model checkpoints to.
-        total_epochs: Number of epochs for training.
+        num_epochs: Number of epochs for training.
         save_interval: Number of epochs between saving checkpoints.
     """
     # Loading in the data.
@@ -455,10 +455,10 @@ def train_resnet(
         model.load_state_dict(state_dict=ckpt["model_state_dict"])
         optimizer.load_state_dict(state_dict=ckpt["optimizer_state_dict"])
         scheduler.load_state_dict(state_dict=ckpt["scheduler_state_dict"])
-        epoch = ckpt["epoch"]
+        start_epoch = ckpt["epoch"]
         print(f"model loaded from {resume_checkpoint_path}")
     else:
-        epoch = 0
+        start_epoch = 0
 
     # Print the model hyperparameters.
     print_params(batch_size=batch_size,
@@ -466,7 +466,7 @@ def train_resnet(
                  learning_rate=learning_rate,
                  learning_rate_decay=learning_rate_decay,
                  log_csv=log_csv,
-                 num_epochs=total_epochs,
+                 num_epochs=num_epochs,
                  num_layers=num_layers,
                  pretrain=pretrain,
                  resume_checkpoint=resume_checkpoint,
@@ -488,14 +488,14 @@ def train_resnet(
                      criterion=nn.CrossEntropyLoss(),
                      optimizer=optimizer,
                      scheduler=scheduler,
-                     num_epochs=epoch,
+                     start_epoch=start_epoch,
                      writer=writer,
                      batch_size=batch_size,
                      checkpoints_folder=checkpoints_folder,
                      device=device,
                      num_layers=num_layers,
                      save_interval=save_interval,
-                     total_epochs=total_epochs,
+                     num_epochs=num_epochs,
                      classes=classes,
                      num_classes=num_classes)
 

@@ -23,7 +23,7 @@ train_resnet(batch_size=config.args.batch_size,
              resume_checkpoint=config.args.resume_checkpoint,
              resume_checkpoint_path=config.resume_checkpoint_path,
              save_interval=config.args.save_interval,
-             total_epochs=config.args.num_epochs,
+             num_epochs=config.args.num_epochs,
              train_folder=config.args.train_folder,
              weight_decay=config.args.weight_decay)
 print("+++++ Finished running 3_train.py +++++")
