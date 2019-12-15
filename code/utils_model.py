@@ -3,8 +3,6 @@ DeepSlide
 Using ResNet to train and test.
 
 Authors: Jason Wei, Behnaz Abdollahi, Saeed Hassanpour, Naofumi Tomita
-
-Last Modified: November 30, 2019 (Joseph DiPalma)
 """
 
 import operator

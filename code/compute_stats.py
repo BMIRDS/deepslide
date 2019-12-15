@@ -3,8 +3,6 @@ DeepSlide
 Computes the image statistics for normalization.
 
 Authors: Naofumi Tomita
-
-Last Modified: November 30, 2019 (Joseph DiPalma)
 """
 
 from pathlib import Path

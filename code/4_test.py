@@ -2,8 +2,8 @@ import config
 from utils_model import get_predictions
 
 # Run the ResNet on the generated patches.
-print("+++++ Running 4_test.py +++++")
-print("----- Finding validation patch predictions -----")
+print("\n\n+++++ Running 4_test.py +++++")
+print("\n----- Finding validation patch predictions -----")
 # Validation patches.
 get_predictions(patches_eval_folder=config.args.patches_eval_val,
                 output_folder=config.args.preds_val,
@@ -19,7 +19,7 @@ get_predictions(patches_eval_folder=config.args.patches_eval_val,
                 path_mean=config.path_mean,
                 path_std=config.path_std,
                 pretrain=config.args.pretrain)
-print("----- Finished finding validation patch predictions -----")
+print("----- Finished finding validation patch predictions -----\n")
 print("----- Finding test patch predictions -----")
 # Test patches.
 get_predictions(patches_eval_folder=config.args.patches_eval_test,
@@ -36,5 +36,5 @@ get_predictions(patches_eval_folder=config.args.patches_eval_test,
                 path_mean=config.path_mean,
                 path_std=config.path_std,
                 pretrain=config.args.pretrain)
-print("----- Finished finding test patch predictions -----")
-print("+++++ Finished running 4_test.py +++++")
+print("----- Finished finding test patch predictions -----\n")
+print("+++++ Finished running 4_test.py +++++\n\n")

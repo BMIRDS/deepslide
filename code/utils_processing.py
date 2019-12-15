@@ -3,8 +3,6 @@ DeepSlide
 Contains all functions for processing.
 
 Authors: Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
-
-Last Modified: November 30, 2019 (Joseph DiPalma)
 """
 
 import functools

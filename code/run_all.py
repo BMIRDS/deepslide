@@ -7,7 +7,7 @@ from utils_processing import (balance_classes, gen_train_patches,
                               gen_val_patches, produce_patches)
 from utils_split import split
 
-print("+++++ Running 1_split.py +++++")
+print("\n\n+++++ Running 1_split.py +++++")
 split(all_wsi=config.args.all_wsi,
       classes=config.classes,
       keep_orig_copy=config.args.keep_orig_copy,
@@ -19,13 +19,13 @@ split(all_wsi=config.args.all_wsi,
       wsi_test=config.args.wsi_test,
       wsi_train=config.args.wsi_train,
       wsi_val=config.args.wsi_val)
-print("+++++ Finished running 1_split.py +++++")
+print("+++++ Finished running 1_split.py +++++\n\n")
 
 ###########################################
 #                  MAIN                   #
 ###########################################
-print("+++++ Running 2_process_patches.py +++++")
-print("----- Generating training patches -----")
+print("\n\n+++++ Running 2_process_patches.py +++++")
+print("\n----- Generating training patches -----")
 # Generate training patches.
 gen_train_patches(input_folder=config.args.wsi_train,
                   output_folder=config.train_patches,
@@ -36,11 +36,11 @@ gen_train_patches(input_folder=config.args.wsi_train,
                   purple_scale_size=config.args.purple_scale_size,
                   image_ext=config.args.image_ext,
                   type_histopath=config.args.type_histopath)
-print("----- Finished generating training patches -----")
+print("----- Finished generating training patches -----\n")
 print("----- Balancing the training patches -----")
 # Balance the training patches.
 balance_classes(training_folder=config.train_patches)
-print("----- Finished balancing the training patches -----")
+print("----- Finished balancing the training patches -----\n")
 print("----- Generating validation patches -----")
 # Generate validation patches.
 gen_val_patches(input_folder=config.args.wsi_val,
@@ -52,7 +52,7 @@ gen_val_patches(input_folder=config.args.wsi_val,
                 purple_scale_size=config.args.purple_scale_size,
                 image_ext=config.args.image_ext,
                 type_histopath=config.args.type_histopath)
-print("----- Finished generating validation patches -----")
+print("----- Finished generating validation patches -----\n")
 print("----- Generating validation evaluation patches -----")
 # Generate validation evaluation patches.
 produce_patches(input_folder=config.args.wsi_val,
@@ -65,7 +65,7 @@ produce_patches(input_folder=config.args.wsi_val,
                 purple_scale_size=config.args.purple_scale_size,
                 image_ext=config.args.image_ext,
                 type_histopath=config.args.type_histopath)
-print("----- Finished generating validation evaluation patches -----")
+print("----- Finished generating validation evaluation patches -----\n")
 print("----- Generating test evaluation patches -----")
 # Generate test evaluation patches.
 produce_patches(input_folder=config.args.wsi_test,
@@ -78,11 +78,11 @@ produce_patches(input_folder=config.args.wsi_test,
                 purple_scale_size=config.args.purple_scale_size,
                 image_ext=config.args.image_ext,
                 type_histopath=config.args.type_histopath)
-print("----- Finished generating test evaluation patches -----")
-print("+++++ Finished running 2_process_patches.py +++++")
+print("----- Finished generating test evaluation patches -----\n")
+print("+++++ Finished running 2_process_patches.py +++++\n\n")
 
 # Training the ResNet.
-print("+++++ Running 3_train.py +++++")
+print("\n\n+++++ Running 3_train.py +++++")
 train_resnet(batch_size=config.args.batch_size,
              checkpoints_folder=config.args.checkpoints_folder,
              classes=config.classes,
@@ -106,11 +106,11 @@ train_resnet(batch_size=config.args.batch_size,
              num_epochs=config.args.num_epochs,
              train_folder=config.args.train_folder,
              weight_decay=config.args.weight_decay)
-print("+++++ Finished running 3_train.py +++++")
+print("+++++ Finished running 3_train.py +++++\n\n")
 
 # Run the ResNet on the generated patches.
-print("+++++ Running 4_test.py +++++")
-print("----- Finding validation patch predictions -----")
+print("\n\n+++++ Running 4_test.py +++++")
+print("\n----- Finding validation patch predictions -----")
 # Validation patches.
 get_predictions(patches_eval_folder=config.args.patches_eval_val,
                 output_folder=config.args.preds_val,
@@ -126,7 +126,7 @@ get_predictions(patches_eval_folder=config.args.patches_eval_val,
                 path_mean=config.path_mean,
                 path_std=config.path_std,
                 pretrain=config.args.pretrain)
-print("----- Finished finding validation patch predictions -----")
+print("----- Finished finding validation patch predictions -----\n")
 print("----- Finding test patch predictions -----")
 # Test patches.
 get_predictions(patches_eval_folder=config.args.patches_eval_test,
@@ -143,23 +143,23 @@ get_predictions(patches_eval_folder=config.args.patches_eval_test,
                 path_mean=config.path_mean,
                 path_std=config.path_std,
                 pretrain=config.args.pretrain)
-print("----- Finished finding test patch predictions -----")
-print("+++++ Finished running 4_test.py +++++")
+print("----- Finished finding test patch predictions -----\n")
+print("+++++ Finished running 4_test.py +++++\n\n")
 
 # Searching over thresholds for filtering noise.
-print("+++++ Running 5_grid_search.py +++++")
-print("----- Running grid search -----")
+print("\n\n+++++ Running 5_grid_search.py +++++")
+print("\n----- Running grid search -----")
 grid_search(pred_folder=config.args.preds_val,
             inference_folder=config.args.inference_val,
             classes=config.classes,
             image_ext=config.args.image_ext,
             threshold_search=config.threshold_search)
-print("----- Finished running grid search -----")
-print("+++++ Finished running 5_grid_search.py +++++")
+print("----- Finished running grid search -----\n")
+print("+++++ Finished running 5_grid_search.py +++++\n\n")
 
 # Visualizing patch predictions with overlaid dots.
-print("+++++ Running 6_visualize.py +++++")
-print("----- Visualizing validation set -----")
+print("\n\n+++++ Running 6_visualize.py +++++")
+print("\n----- Visualizing validation set -----")
 # Visualize validation set.
 visualize(wsi_folder=config.args.wsi_val,
           preds_folder=config.args.preds_val,
@@ -168,7 +168,7 @@ visualize(wsi_folder=config.args.wsi_val,
           colors=config.colors,
           num_classes=config.num_classes,
           patch_size=config.args.patch_size)
-print("----- Finished visualizing validation set -----")
+print("----- Finished visualizing validation set -----\n")
 print("----- Visualizing test set -----")
 # Visualize test set.
 visualize(wsi_folder=config.args.wsi_test,
@@ -178,27 +178,27 @@ visualize(wsi_folder=config.args.wsi_test,
           colors=config.colors,
           num_classes=config.num_classes,
           patch_size=config.args.patch_size)
-print("----- Finished visualizing test set -----")
-print("+++++ Finished running 6_visualize.py +++++")
+print("----- Finished visualizing test set -----\n")
+print("+++++ Finished running 6_visualize.py +++++\n\n")
 
 # Running the code on the testing set.
-print("+++++ Running 7_final_test.py +++++")
-print("----- Finding best thresholds -----")
+print("\n\n+++++ Running 7_final_test.py +++++")
+print("\n----- Finding best thresholds -----")
 best_thresholds = find_best_acc_and_thresh(
     labels_csv=config.args.labels_val,
     inference_folder=config.args.inference_val,
     classes=config.classes)
-print("----- Finished finding best thresholds -----")
+print("----- Finished finding best thresholds -----\n")
 print("----- Outputting all predictions -----")
 output_all_predictions(patches_pred_folder=config.args.preds_test,
                        output_folder=config.args.inference_test,
                        conf_thresholds=best_thresholds,
                        classes=config.classes,
                        image_ext=config.args.image_ext)
-print("----- Finished outputting all predictions -----")
+print("----- Finished outputting all predictions -----\n")
 print("----- Printing final test results -----")
 print_final_test_results(labels_csv=config.args.labels_test,
                          inference_folder=config.args.inference_test,
                          classes=config.classes)
-print("----- Finished printing final test results -----")
-print("+++++ Finished running 7_final_test.py +++++")
+print("----- Finished printing final test results -----\n")
+print("+++++ Finished running 7_final_test.py +++++\n\n")

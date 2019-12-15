@@ -5,24 +5,6 @@ This repository is a sliding window framework for classification of high resolut
 
 ![alt text](figures/figure-2-color.jpeg)
 
-## Changes in this Release
-- Use Python [multiprocessing](https://docs.python.org/3.6/library/multiprocessing.html)
-to speed up patch creation.
-- Replace [os](https://docs.python.org/3.6/library/os.html) with
-[pathlib](https://docs.python.org/3.6/library/pathlib.html) module.
-- Added [argparse](https://docs.python.org/3.6/library/argparse.html) support.
-- Rewrote patch processing code using vector operations.
-- Fully documented all functions and methods with docstrings and type hints.
-- Compute image means and standard deviations for normalization online.
-- Increased efficiency of code by rewriting inefficient code.
-
-## Known Issues and Limitations
-- Patch creation code doesn't find any patches in images that are slightly larger than the specified patch size.
-- Only 1 GPU supported.
-- Should work, but not tested on Windows.
-- In cases where no crops are found for an image, empty directories are created. Current workaround uses `try` and `except` statements to catch errors.
-- Image reading code expects colors to be in the RGB space. Current workaround is to keep first 3 channels.
-
 ## Requirements
 - [imageio](https://pypi.org/project/imageio/)
 - [NumPy 1.16](https://numpy.org/)
@@ -48,29 +30,23 @@ We expect the WSI input to be at the crop or tissue level, rather than the entir
 
 ## 1. Train-Val-Test Split:
 
-Splits the data into a validation and test set. 
-Default validation whole-slide images (WSI) per class is 20 and test images per class is 30. 
-You can change these numbers by changing the `--val-wsi-per-class` and \
-`--test-wsi-per-class` flags at runtime. 
-You can skip this step if you did a custom split (for example, you need to split by patients).
+Splits the data into a validation and test set. Default validation whole-slide images (WSI) per class is 20 and test images per class is 30. You can change these numbers by changing the `--val_wsi_per_class` and `--test_wsi_per_class` flags at runtime. You can skip this step if you did a custom split (for example, you need to split by patients).
 
 ```
 python code/1_split.py
 ```
 
-If you do not want to duplicate the data, append `--keep-orig-copy False` to the above command.
+If you do not want to duplicate the data, append `--keep_orig_copy False` to the above command.
 
 **Inputs**: `all_wsi` 
 
 **Outputs**: `wsi_train`, `wsi_val`, `wsi_test`, `labels_train.csv`, `labels_val.csv`, `labels_test.csv`
 
-Note that `all_wsi` must contain subfolders of images labeled by class. 
-For instance, if your two classes are `a` and `n`, 
-you must have `a/*.jpg` with the images in class `a` and `n/*.jpg` with images in class `n`.
+Note that `all_wsi` must contain subfolders of images labeled by class. For instance, if your two classes are `a` and `n`, you must have `a/*.jpg` with the images in class `a` and `n/*.jpg` with images in class `n`.
 
 ### Example
 ```
-python code/1_split.py --val-wsi-per-class 10 --test-wsi-per-class 20
+python code/1_split.py --val_wsi_per_class 10 --test_wsi_per_class 20
 ```
 
 ## 2. Data Processing
@@ -85,11 +61,7 @@ python code/1_split.py --val-wsi-per-class 10 --test-wsi-per-class 20
 python code/2_process_patches.py
 ```
 
-Note that this will take up a significant amount of space. Change `--num-train-per-class` to be smaller if you wish not to generate as many windows.
-If your histopathology images are H&E-stained, whitespace will automatically be filtered. 
-Turn this off using the option `--type-histopath False`. 
-Default overlapping area is 1/3 for test slides. 
-Use 1 or 2 if your images are very large; you can also change this using the `--slide-overlap` option.
+Note that this will take up a significant amount of space. Change `--num_train_per_class` to be smaller if you wish not to generate as many windows. If your histopathology images are H&E-stained, whitespace will automatically be filtered. Turn this off using the option `--type_histopath False`. Default overlapping area is 1/3 for test slides. Use 1 or 2 if your images are very large; you can also change this using the `--slide_overlap` option.
 
 **Inputs**: `wsi_train`, `wsi_val`, `wsi_test`
 
@@ -97,7 +69,7 @@ Use 1 or 2 if your images are very large; you can also change this using the `--
 
 ### Example
 ```
-python code/2_process_patches.py --num-train-per-class 20000 --slide-overlap 2
+python code/2_process_patches.py --num_train_per_class 20000 --slide_overlap 2
 ```
 
 
@@ -107,8 +79,7 @@ python code/2_process_patches.py --num-train-per-class 20000 --slide-overlap 2
 CUDA_VISIBLE_DEVICES=0 python code/3_train.py
 ```
 
-We recommend using ResNet-18 if you are training on a relatively small histopathology dataset. You can change hyperparameters using the `argparse` flags. 
-There is an option to retrain from a previous checkpoint. Model checkpoints are saved by default every epoch in `checkpoints`.
+We recommend using ResNet-18 if you are training on a relatively small histopathology dataset. You can change hyperparameters using the `argparse` flags. There is an option to retrain from a previous checkpoint. Model checkpoints are saved by default every epoch in `checkpoints`.
 
 **Inputs**: `train_folder`
 
@@ -116,7 +87,7 @@ There is an option to retrain from a previous checkpoint. Model checkpoints are 
 
 ### Example
 ```
-CUDA_VISIBLE_DEVICES=0 python code/3_train.py --batch-size 32 --num-epochs 100 --save-interval 5
+CUDA_VISIBLE_DEVICES=0 python code/3_train.py --batch_size 32 --num_epochs 100 --save_interval 5
 ```
 
 ## 4. Testing on WSI
@@ -127,9 +98,7 @@ Run the model on all the patches for each WSI in the validation and test set.
 CUDA_VISIBLE_DEVICES=0 python code/4_test.py
 ```
 
-We automatically choose the model with the best validation accuracy. 
-You can also specify your own. You can change the thresholds used in the grid search 
-by specifying the `threshold_search` variable in `code/config.py`.
+We automatically choose the model with the best validation accuracy. You can also specify your own. You can change the thresholds used in the grid search by specifying the `threshold_search` variable in `code/config.py`.
 
 **Inputs**: `patches_eval_val`, `patches_eval_test`
 
@@ -137,16 +106,13 @@ by specifying the `threshold_search` variable in `code/config.py`.
 
 ### Example
 ```
-CUDA_VISIBLE_DEVICES=0 python code/4_test.py --auto-select False
+CUDA_VISIBLE_DEVICES=0 python code/4_test.py --auto_select False
 ```
 
 
 ## 5. Searching for Best Thresholds
 
-The simplest way to make a whole-slide inference is to choose the class with the most patch predictions. 
-We can also implement thresholding on the patch level to throw out noise. 
-To find the best thresholds, we perform a grid search. 
-This function will generate csv files for each WSI with the predictions for each patch.
+The simplest way to make a whole-slide inference is to choose the class with the most patch predictions. We can also implement thresholding on the patch level to throw out noise. To find the best thresholds, we perform a grid search. This function will generate csv files for each WSI with the predictions for each patch.
 
 ```
 python code/5_grid_search.py
@@ -158,7 +124,7 @@ python code/5_grid_search.py
 
 ### Example
 ```
-python code/5_grid_search.py --preds-val different_labels_val.csv
+python code/5_grid_search.py --preds_val different_labels_val.csv
 ```
 
 ## 6. Visualization
@@ -179,7 +145,7 @@ You can change the colors in `colors` in `code/config.py`
 
 ### Example
 ```
-python code/6_visualize.py --vis-test different_vis_test_directory
+python code/6_visualize.py --vis_test different_vis_test_directory
 ```
 
 
@@ -197,7 +163,7 @@ python code/7_final_test.py
 
 ### Example
 ```
-python code/7_final_test.py --labels-test different_labels_test.csv
+python code/7_final_test.py --labels_test different_labels_test.csv
 ```
 
 Best of luck.
@@ -220,6 +186,20 @@ and append any desired flags.
 
 See `code/z_preprocessing` for some code to convert images from svs into jpg. This uses OpenSlide and takes a while. How much you want to compress images will depend on the resolution that they were originally scanned, but a guideline that has worked for us is 3-5 MB per WSI.
 
+## Changes in this Release
+- Use Python [multiprocessing](https://docs.python.org/3.6/library/multiprocessing.html) to speed up patch creation.
+- Replace [os](https://docs.python.org/3.6/library/os.html) with [pathlib](https://docs.python.org/3.6/library/pathlib.html) module.
+- Added [argparse](https://docs.python.org/3.6/library/argparse.html) support.
+- Rewrote patch processing code using vector operations.
+- Fully documented all functions and methods with docstrings and type hints.
+- Compute image means and standard deviations for normalization online.
+- Increased efficiency of code by rewriting inefficient code.
+
+## Known Issues and Limitations
+- Only 1 GPU supported.
+- Should work, but not tested on Windows.
+- In cases where no crops are found for an image, empty directories are created. Current workaround uses `try` and `except` statements to catch errors.
+- Image reading code expects colors to be in the RGB space. Current workaround is to keep first 3 channels.
 
 # Still not working? Consider the following...
 
