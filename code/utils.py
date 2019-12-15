@@ -3,8 +3,6 @@ DeepSlide
 General helper methods used in other functions.
 
 Authors: Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
-
-Last Modified: November 30, 2019 (Joseph DiPalma)
 """
 
 import datetime

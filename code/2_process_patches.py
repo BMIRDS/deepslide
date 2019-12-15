@@ -6,8 +6,8 @@ from utils_processing import (balance_classes, gen_train_patches,
 ###########################################
 #                  MAIN                   #
 ###########################################
-print("+++++ Running 2_process_patches.py +++++")
-print("----- Generating training patches -----")
+print("\n\n+++++ Running 2_process_patches.py +++++")
+print("\n----- Generating training patches -----")
 # Generate training patches.
 gen_train_patches(input_folder=config.args.wsi_train,
                   output_folder=config.train_patches,
@@ -18,11 +18,11 @@ gen_train_patches(input_folder=config.args.wsi_train,
                   purple_scale_size=config.args.purple_scale_size,
                   image_ext=config.args.image_ext,
                   type_histopath=config.args.type_histopath)
-print("----- Finished generating training patches -----")
+print("----- Finished generating training patches -----\n")
 print("----- Balancing the training patches -----")
 # Balance the training patches.
 balance_classes(training_folder=config.train_patches)
-print("----- Finished balancing the training patches -----")
+print("----- Finished balancing the training patches -----\n")
 print("----- Generating validation patches -----")
 # Generate validation patches.
 gen_val_patches(input_folder=config.args.wsi_val,
@@ -34,7 +34,7 @@ gen_val_patches(input_folder=config.args.wsi_val,
                 purple_scale_size=config.args.purple_scale_size,
                 image_ext=config.args.image_ext,
                 type_histopath=config.args.type_histopath)
-print("----- Finished generating validation patches -----")
+print("----- Finished generating validation patches -----\n")
 print("----- Generating validation evaluation patches -----")
 # Generate validation evaluation patches.
 produce_patches(input_folder=config.args.wsi_val,
@@ -47,7 +47,7 @@ produce_patches(input_folder=config.args.wsi_val,
                 purple_scale_size=config.args.purple_scale_size,
                 image_ext=config.args.image_ext,
                 type_histopath=config.args.type_histopath)
-print("----- Finished generating validation evaluation patches -----")
+print("----- Finished generating validation evaluation patches -----\n")
 print("----- Generating test evaluation patches -----")
 # Generate test evaluation patches.
 produce_patches(input_folder=config.args.wsi_test,
@@ -60,5 +60,5 @@ produce_patches(input_folder=config.args.wsi_test,
                 purple_scale_size=config.args.purple_scale_size,
                 image_ext=config.args.image_ext,
                 type_histopath=config.args.type_histopath)
-print("----- Finished generating test evaluation patches -----")
-print("+++++ Finished running 2_process_patches.py +++++")
+print("----- Finished generating test evaluation patches -----\n")
+print("+++++ Finished running 2_process_patches.py +++++\n\n")

@@ -3,8 +3,6 @@ DeepSlide
 Splits the data into training, validation, and testing sets.
 
 Authors: Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
-
-Last Modified: November 30, 2019 (Joseph DiPalma)
 """
 
 import shutil

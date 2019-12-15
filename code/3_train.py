@@ -2,7 +2,7 @@ import config
 from utils_model import train_resnet
 
 # Training the ResNet.
-print("+++++ Running 3_train.py +++++")
+print("\n\n+++++ Running 3_train.py +++++")
 train_resnet(batch_size=config.args.batch_size,
              checkpoints_folder=config.args.checkpoints_folder,
              classes=config.classes,
@@ -26,4 +26,4 @@ train_resnet(batch_size=config.args.batch_size,
              num_epochs=config.args.num_epochs,
              train_folder=config.args.train_folder,
              weight_decay=config.args.weight_decay)
-print("+++++ Finished running 3_train.py +++++")
+print("+++++ Finished running 3_train.py +++++\n\n")
