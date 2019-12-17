@@ -178,7 +178,7 @@ and change the desired flags on each line of the `code/run_all.sh` script.
 
 See `code/z_preprocessing` for some code to convert images from svs into jpg. This uses OpenSlide and takes a while. How much you want to compress images will depend on the resolution that they were originally scanned, but a guideline that has worked for us is 3-5 MB per WSI.
 
-## Known Issues and Limitations
+# Known Issues and Limitations
 - Only 1 GPU supported.
 - Should work, but not tested on Windows.
 - In cases where no crops are found for an image, empty directories are created. Current workaround uses `try` and `except` statements to catch errors.
