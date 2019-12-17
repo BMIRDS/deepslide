@@ -25,9 +25,6 @@ This repository is a sliding window framework for classification of high resolut
 
 Take a look at `code/config.py` before you begin to get a feel for what parameters can be changed.
 
-## Note on Expected WSI Input
-We expect the WSI input to be at the crop or tissue level, rather than the entire WSI. While the code will still work if entire WSIs are provided, the performance will likely be bad.
-
 ## 1. Train-Val-Test Split:
 
 Splits the data into a validation and test set. Default validation whole-slide images (WSI) per class is 20 and test images per class is 30. You can change these numbers by changing the `--val_wsi_per_class` and `--test_wsi_per_class` flags at runtime. You can skip this step if you did a custom split (for example, you need to split by patients).
@@ -170,36 +167,23 @@ Best of luck.
 
 # Quick Run
 
-If you have utter trust in this code and do not want to see the outputs at each step, do:
+If you want to run all code and change the default parameters in `code/config.py`, run
 ```
 sh code/run_all.sh
 ```
-
-If you want to run all code and change the default parameters in `code/config.py`, run
-```
-python code/run_all.py
-```
-and append any desired flags.
+and change the desired flags on each line of the `code/run_all.sh` script.
 
 
 # Pre-Processing Scripts
 
 See `code/z_preprocessing` for some code to convert images from svs into jpg. This uses OpenSlide and takes a while. How much you want to compress images will depend on the resolution that they were originally scanned, but a guideline that has worked for us is 3-5 MB per WSI.
 
-## Changes in this Release
-- Use Python [multiprocessing](https://docs.python.org/3.6/library/multiprocessing.html) to speed up patch creation.
-- Replace [os](https://docs.python.org/3.6/library/os.html) with [pathlib](https://docs.python.org/3.6/library/pathlib.html) module.
-- Added [argparse](https://docs.python.org/3.6/library/argparse.html) support.
-- Rewrote patch processing code using vector operations.
-- Fully documented all functions and methods with docstrings and type hints.
-- Compute image means and standard deviations for normalization online.
-- Increased efficiency of code by rewriting inefficient code.
-
-## Known Issues and Limitations
+# Known Issues and Limitations
 - Only 1 GPU supported.
 - Should work, but not tested on Windows.
 - In cases where no crops are found for an image, empty directories are created. Current workaround uses `try` and `except` statements to catch errors.
 - Image reading code expects colors to be in the RGB space. Current workaround is to keep first 3 channels.
+- This code will likely work better when the labels are at the tissue level. It will still work for the entire WSI, but results may vary.
 
 # Still not working? Consider the following...
 
