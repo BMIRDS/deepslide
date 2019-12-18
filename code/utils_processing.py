@@ -1,48 +1,58 @@
-# DeepSlide
-# Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
+"""
+DeepSlide
+Contains all functions for processing.
 
-# This file contains all the methods for processing
+Authors: Jason Wei, Behnaz Abdollahi, Saeed Hassanpour
+"""
 
-import config
-from utils import *
+import functools
+import itertools
+import math
+import time
+from multiprocessing import (Process, Queue, RawArray)
+from pathlib import Path
+from shutil import copyfile
+from typing import (Callable, Dict, List, Tuple)
 
+import numpy as np
 from PIL import Image
-import cv2
+from imageio import (imsave, imread)
+from skimage.measure import block_reduce
 
-import skimage.measure
-from skimage.transform import rescale, rotate
-from scipy.stats import mode
-from scipy.misc import imsave
-Image.MAX_IMAGE_PIXELS = 1e10
+from utils import (get_all_image_paths, get_image_names, get_image_paths,
+                   get_subfolder_paths)
 
-###########################################
-#           FILTERING WHITESPACE          #
-###########################################
+Image.MAX_IMAGE_PIXELS = None
 
 
-def is_purple_dot(r, g, b):
-    rb_avg = (r + b) / 2
-    if r > g - 10 and b > g - 10 and rb_avg > g + 20:
-        return True
-    return False
+def is_purple(crop: np.ndarray, purple_threshold: int,
+              purple_scale_size: int) -> bool:
+    """
+    Determines if a given portion of an image is purple.
 
+    Args:
+        crop: Portion of the image to check for being purple.
+        purple_threshold: Number of purple points for region to be considered purple.
+        purple_scale_size: Scalar to use for reducing image to check for purple.
 
-# this is actually a better method than is whitespace, but only if your images are purple lols
-def is_purple(crop):
-    pooled = skimage.measure.block_reduce(
-        crop, (int(crop.shape[0] / 15), int(crop.shape[1] / 15), 1),
-        np.average)
-    num_purple_squares = 0
-    for x in range(pooled.shape[0]):
-        for y in range(pooled.shape[1]):
-            r = pooled[x, y, 0]
-            g = pooled[x, y, 1]
-            b = pooled[x, y, 2]
-            if is_purple_dot(r, g, b):
-                num_purple_squares += 1
-    if num_purple_squares > 100:
-        return True
-    return False
+    Returns:
+        A boolean representing whether the image is purple or not.
+    """
+    block_size = (crop.shape[0] // purple_scale_size,
+                  crop.shape[1] // purple_scale_size, 1)
+    pooled = block_reduce(image=crop, block_size=block_size, func=np.average)
+
+    # Calculate boolean arrays for determining if portion is purple.
+    r, g, b = pooled[..., 0], pooled[..., 1], pooled[..., 2]
+    cond1 = r > g - 10
+    cond2 = b > g - 10
+    cond3 = ((r + b) / 2) > g + 20
+
+    # Find the indexes of pooled satisfying all 3 conditions.
+    pooled = pooled[cond1 & cond2 & cond3]
+    num_purple = pooled.shape[0]
+
+    return num_purple > purple_threshold
 
 
 ###########################################
@@ -50,161 +60,138 @@ def is_purple(crop):
 ###########################################
 
 
-# returns number of folders and images given a folder path
-# used for deciding how much to slide windows
-def get_folder_size_and_num_images(folder):
-    image_paths = [
-        join(folder, f) for f in listdir(folder) if isfile(join(folder, f))
-    ]
-    if join(folder, '.DS_Store') in image_paths:
-        image_paths.remove(join(folder, '.DS_Store'))
+def get_folder_size_and_num_images(folder: Path) -> Tuple[float, int]:
+    """
+    Finds the number and size of images in a folder path.
+    Used to decide how much to slide windows.
+
+    Args:
+        folder: Folder containing images.
+
+    Returns:
+        A tuple containing the total size of the images and the number of images.
+    """
+    image_paths = get_image_paths(folder=folder)
+
     file_size = 0
     for image_path in image_paths:
-        file_size += os.path.getsize(image_path)
-        # print(image_path, os.path.getsize(image_path))
-    file_size_mb = file_size / 1000.0 / 1000.0
+        file_size += image_path.stat().st_size
+
+    file_size_mb = file_size / 1e6
     return file_size_mb, len(image_paths)
 
 
-# how much should the inverse overlap factor be for each folder so that the class distributions are equal?
-# returns a dictionary
-def get_subfolder_to_overlap(subfolders, desired_crops_per_class):
+def get_subfolder_to_overlap(subfolders: List[Path],
+                             desired_crops_per_class: int
+                             ) -> Dict[Path, float]:
+    """
+    Find how much the inverse overlap factor should be for each folder so that
+    the class distributions are approximately equal.
+
+    Args:
+        subfolders: Subfolders to calculate the overlap factors for.
+        desired_crops_per_class: Desired number of patches per class.
+
+    Returns:
+        A dictionary mapping subfolder paths to inverse overlap factor.
+    """
     subfolder_to_overlap_factor = {}
     for subfolder in subfolders:
         subfolder_size, subfolder_num_images = get_folder_size_and_num_images(
-            subfolder)
-        overlap_factor = math.sqrt(
-            desired_crops_per_class / (subfolder_size / 0.013)
-        )  # each image is 13 kb = 0.013 MB, idk I just added two randomly
-        overlap_factor = max(1, math.pow(overlap_factor,
-                                         1.5))  # empircal guessing?
+            folder=subfolder)
+
+        # Each image is 13KB = 0.013MB, idk I just added two randomly.
+        overlap_factor = max(
+            1.0,
+            math.pow(
+                math.sqrt(desired_crops_per_class / (subfolder_size / 0.013)),
+                1.5))
         subfolder_to_overlap_factor[subfolder] = overlap_factor
-        print(subfolder + ": " + str(subfolder_size)[:9] + "MB, " +
-              str(subfolder_num_images) + " images, overlap_factor=" +
-              str(overlap_factor))
+        print(f"{subfolder}: {subfolder_size}MB, "
+              f"{subfolder_num_images} images, "
+              f"overlap_factor={overlap_factor:.2f}")
+
     return subfolder_to_overlap_factor
 
 
-# zero padding for really small crops
-def zero_pad(image, patch_size):
+def gen_train_patches(input_folder: Path, output_folder: Path,
+                      num_train_per_class: int, num_workers: int,
+                      patch_size: int, purple_threshold: int,
+                      purple_scale_size: int, image_ext: str,
+                      type_histopath: bool) -> None:
+    """
+    Generates all patches for subfolders in the training set.
 
-    x = image.shape[0]  # get current x and y of image
-    y = image.shape[1]
-    if x >= patch_size and y >= patch_size:
-        return image  # if its already big enough, then do nothing
-
-    x_new = max(x, patch_size)
-    y_new = max(y, patch_size)
-    new_image = np.zeros((x_new, y_new, 3))  # otherwise, make a new image
-    x_start = int(x_new / 2 - x / 2)
-    y_start = int(y_new / 2 - y / 2)  # find where to place the old image
-    new_image[x_start:x_start + x, y_start:y_start +
-              y, :] = image  # place the old image
-
-    return new_image  # return the padded image
-
-
-# get the small windows a given subfolder
-# this is a big boy function
-def produce_patches(input_subfolder, output_subfolder, inverse_overlap_factor):
-
-    confirm_output_folder(
-        output_subfolder)  # make the directory if it doens't exist
-    image_names = get_image_names(input_subfolder)
-    start_time = time.time()
-    outputed_windows_per_subfolder = 0
-
-    print('\n' + "getting small crops from " + str(len(image_names)) +
-          ' images in ' + input_subfolder + " with inverse overlap factor " +
-          str(inverse_overlap_factor) + " outputting in " + output_subfolder)
-
-    # get the patches for each wsi
-    for image_name in image_names:
-
-        image_path = join(input_subfolder, image_name)
-        image = cv2.imread(image_path)
-        image = zero_pad(image, config.patch_size)  # zero pad if too small
-
-        x_max = image.shape[0]  # width of image
-        y_max = image.shape[1]  # height of image
-        window_size = 224
-        x_steps = int((x_max - window_size) / window_size *
-                      inverse_overlap_factor)  # number of x starting points
-        y_steps = int((y_max - window_size) / window_size *
-                      inverse_overlap_factor)  # number of y starting points
-        step_size = int(config.patch_size /
-                        inverse_overlap_factor)  # step size, same for x and y
-
-        # loop through the entire big image
-        for i in range(x_steps + 1):
-            for j in range(y_steps + 1):
-
-                # get a patch
-                x_start = i * step_size
-                x_end = x_start + config.patch_size
-                y_start = j * step_size
-                y_end = y_start + config.patch_size
-
-                assert x_start >= 0
-                assert y_start >= 0
-                assert x_end <= x_max
-                assert y_end <= y_max
-
-                patch = image[x_start:x_end, y_start:y_end, :]
-                assert patch.shape == (config.patch_size, config.patch_size, 3)
-                out_path = join(
-                    output_subfolder,
-                    file_no_extension(image_name) + "_" + str(x_start) + "_" +
-                    str(y_start) + ".jpg")
-
-                if config.type_histopath:  # do you want to check for white space?
-                    if is_purple(
-                            patch):  # if its purple (histopathology images)
-                        imsave(out_path, patch)
-                        outputed_windows_per_subfolder += 1
-
-                else:
-                    imsave(out_path, patch)
-                    outputed_windows_per_subfolder += 1
-
-    total_time = time.time() - start_time
-    print("finished patches from " + input_subfolder +
-          " with inverse overlap factor " + str(inverse_overlap_factor) +
-          " outputting in " + output_subfolder)
-    print('total time : ', total_time, 'for', outputed_windows_per_subfolder,
-          'patches')
-
-
-# use this function to generate all patches for subfolders in the training set
-def gen_train_patches(input_folder, output_folder, num_train_per_class):
-
-    # get the subfolders and how much patches should overlap for each
-    subfolders = get_subfolder_paths(input_folder)
-    print(len(subfolders), "subfolders found from", input_folder)
+    Args:
+        input_folder: Folder containing the subfolders containing WSI.
+        output_folder: Folder to save the patches to.
+        num_train_per_class: The desired number of training patches per class.
+        num_workers: Number of workers to use for IO.
+        patch_size: Size of the patches extracted from the WSI.
+        purple_threshold: Number of purple points for region to be considered purple.
+        purple_scale_size: Scalar to use for reducing image to check for purple.
+        image_ext: Image extension for saving patches.
+        type_histopath: Only look for purple histopathology images and filter whitespace.
+    """
+    # Find the subfolders and how much patches should overlap for each.
+    subfolders = get_subfolder_paths(folder=input_folder)
+    print(f"{subfolders} subfolders found from {input_folder}")
     subfolder_to_overlap_factor = get_subfolder_to_overlap(
-        subfolders, num_train_per_class)
-    # print(subfolder_to_overlap_factor)
+        subfolders=subfolders, desired_crops_per_class=num_train_per_class)
 
-    # produce the patches
+    # Produce the patches.
     for input_subfolder in subfolders:
-        overlap_factor = subfolder_to_overlap_factor[input_subfolder]
-        output_subfolder = join(output_folder, input_subfolder.split('/')[-1])
-        produce_patches(input_subfolder, output_subfolder, overlap_factor)
+        produce_patches(input_folder=input_subfolder,
+                        output_folder=output_folder.joinpath(
+                            input_subfolder.name),
+                        inverse_overlap_factor=subfolder_to_overlap_factor[
+                            input_subfolder],
+                        by_folder=False,
+                        num_workers=num_workers,
+                        patch_size=patch_size,
+                        purple_threshold=purple_threshold,
+                        purple_scale_size=purple_scale_size,
+                        image_ext=image_ext,
+                        type_histopath=type_histopath)
 
     print("\nfinished all folders\n")
 
 
-# use this function to generate all patches for subfolders in the validation set
-def gen_val_patches(input_folder, output_folder, overlap_factor):
+def gen_val_patches(input_folder: Path, output_folder: Path,
+                    overlap_factor: float, num_workers: int, patch_size: int,
+                    purple_threshold: int, purple_scale_size: int,
+                    image_ext: str, type_histopath: bool) -> None:
+    """
+    Generates all patches for subfolders in the validation set.
 
-    # get the subfolders and how much patches should overlap for each
-    subfolders = get_subfolder_paths(input_folder)
-    print(len(subfolders), "subfolders found from", input_folder)
+    Args:
+        input_folder: Folder containing the subfolders containing WSI.
+        output_folder: Folder to save the patches to.
+        overlap_factor: The amount of overlap between patches.
+        num_workers: Number of workers to use for IO.
+        patch_size: Size of the patches extracted from the WSI.
+        purple_threshold: Number of purple points for region to be considered purple.
+        purple_scale_size: Scalar to use for reducing image to check for purple.
+        image_ext: Image extension for saving patches.
+        type_histopath: Only look for purple histopathology images and filter whitespace.
+    """
+    # Find the subfolders and how much patches should overlap for each.
+    subfolders = get_subfolder_paths(folder=input_folder)
+    print(f"{len(subfolders)} subfolders found from {input_folder}")
 
-    # produce the patches
+    # Produce the patches.
     for input_subfolder in subfolders:
-        output_subfolder = join(output_folder, input_subfolder.split('/')[-1])
-        produce_patches(input_subfolder, output_subfolder, overlap_factor)
+        produce_patches(input_folder=input_subfolder,
+                        output_folder=output_folder.joinpath(
+                            input_subfolder.name),
+                        inverse_overlap_factor=overlap_factor,
+                        by_folder=False,
+                        num_workers=num_workers,
+                        patch_size=patch_size,
+                        purple_threshold=purple_threshold,
+                        purple_scale_size=purple_scale_size,
+                        image_ext=image_ext,
+                        type_histopath=type_histopath)
 
     print("\nfinished all folders\n")
 
@@ -214,132 +201,235 @@ def gen_val_patches(input_folder, output_folder, overlap_factor):
 ###########################################
 
 
-def duplicate_until_n(image_paths, n):
+def duplicate_until_n(image_paths: List[Path], n: int) -> None:
+    """
+    Duplicate the underrepresented classes to balance class distributions.
 
+    Args:
+        image_paths: Image paths to check for balance.
+        n: Desired number of images.
+    """
     num_dupls = n - len(image_paths)
 
-    print('balancing', basefolder(image_paths[0]), 'by duplicating', num_dupls)
+    print(f"balancing {image_paths[0].parent} by duplicating {num_dupls}")
 
     for i in range(num_dupls):
-        this_round = int(i / len(image_paths)) + 2
-        idx = i % len(image_paths)
-        image_path = image_paths[idx]
-        dupl_path = basefolder(image_path) + '/' + '_'.join(
-            basename(image_path).split('_')[:-2]) + 'dup' + str(
-                this_round) + '_' + '_'.join(
-                    basename(image_path).split('_')[-2:])
-        os.system(" ".join(['cp', image_path, dupl_path]))
+        image_path = image_paths[i % len(image_paths)]
+
+        xys = image_path.name.split("_")
+        x = xys[:-2]
+        y = xys[-2:]
+
+        copyfile(src=image_path,
+                 dst=Path(
+                     image_path.parent, f"{'_'.join(x)}dup"
+                     f"{(i // len(image_paths)) + 2}_"
+                     f"{'_'.join(y)}"))
 
 
-# balancing class distribution so that training isn't skewed
-def balance_classes(training_folder):
+def balance_classes(training_folder: Path) -> None:
+    """
+    Balancing class distribution so that training isn't skewed.
 
-    subfolders = get_subfolder_paths(training_folder)
+    Args:
+        training_folder: Folder containing the subfolders to be balanced.
+    """
+    subfolders = get_subfolder_paths(folder=training_folder)
     subfolder_to_images = {
-        subfolder: get_image_paths(subfolder)
+        subfolder: get_image_paths(folder=subfolder)
         for subfolder in subfolders
     }
-    subfolder_to_num_images = {
+
+    # Find the class with the most images.
+    biggest_size = max({
         subfolder: len(subfolder_to_images[subfolder])
         for subfolder in subfolders
-    }
-
-    # get class with the most images
-    biggest_size = max(subfolder_to_num_images.values())
+    }.values())
 
     for subfolder in subfolder_to_images:
-        image_path = subfolder_to_images[subfolder]
-        duplicate_until_n(image_path, biggest_size)
+        duplicate_until_n(image_paths=subfolder_to_images[subfolder],
+                          n=biggest_size)
 
-    print('balanced all training classes to have', biggest_size, 'images\n')
-
-
-###########################################
-#       GENERATING PATCHES BY FOLDER      #
-###########################################
+    print(f"balanced all training classes to have {biggest_size} images\n")
 
 
-def add_zeros(string):
-    while len(string) < 5:
-        string = "0" + string
-    return string
+def find_patch_mp(func: Callable[[Tuple[int, int]], int], in_queue: Queue,
+                  out_queue: Queue) -> None:
+    """
+    Find the patches from the WSI using multiprocessing.
+    Helper function to ensure values are sent to each process
+    correctly.
+
+    Args:
+        func: Function to call in multiprocessing.
+        in_queue: Queue containing input data.
+        out_queue: Queue to put output in.
+    """
+    while True:
+        xy = in_queue.get()
+        if xy is None:
+            break
+        out_queue.put(obj=func(xy))
 
 
-# big boy function
-def gen_patches_by_folder(input_folder, output_folder, inverse_overlap_factor):
+def find_patch(xy_start: Tuple[int, int], output_folder: Path,
+               image: np.ndarray, by_folder: bool, image_loc: Path,
+               patch_size: int, image_ext: str, type_histopath: bool,
+               purple_threshold: int, purple_scale_size: int) -> int:
+    """
+    Find the patches for a WSI.
+
+    Args:
+        output_folder: Folder to save the patches to.
+        image: WSI to extract patches from.
+        xy_start: Starting coordinates of the patch.
+        by_folder: Whether to generate the patches by folder or by image.
+        image_loc: Location of the image to use for creating output filename.
+        patch_size: Size of the patches extracted from the WSI.
+        image_ext: Image extension for saving patches.
+        type_histopath: Only look for purple histopathology images and filter whitespace.
+        purple_threshold: Number of purple points for region to be considered purple.
+        purple_scale_size: Scalar to use for reducing image to check for purple.
+
+    Returns:
+        The number 1 if the image was saved successfully and a 0 otherwise.
+        Used to determine the number of patches produced per WSI.
+    """
+    x_start, y_start = xy_start
+
+    patch = image[x_start:x_start + patch_size, y_start:y_start +
+                  patch_size, :]
+    # Sometimes the images are RGBA instead of RGB. Only keep RGB channels.
+    patch = patch[..., [0, 1, 2]]
+
+    if by_folder:
+        output_subsubfolder = output_folder.joinpath(
+            Path(image_loc.name).with_suffix(""))
+        output_subsubfolder = output_subsubfolder.joinpath(
+            output_subsubfolder.name)
+        output_subsubfolder.mkdir(parents=True, exist_ok=True)
+        output_path = output_subsubfolder.joinpath(
+            f"{str(x_start).zfill(5)};{str(y_start).zfill(5)}.{image_ext}")
+    else:
+        output_path = output_folder.joinpath(
+            f"{image_loc.stem}_{x_start}_{y_start}.{image_ext}")
+
+    if type_histopath:
+        if is_purple(crop=patch,
+                     purple_threshold=purple_threshold,
+                     purple_scale_size=purple_scale_size):
+            imsave(uri=output_path, im=patch)
+        else:
+            return 0
+    else:
+        imsave(uri=output_path, im=patch)
+    return 1
+
+
+def produce_patches(input_folder: Path, output_folder: Path,
+                    inverse_overlap_factor: float, by_folder: bool,
+                    num_workers: int, patch_size: int, purple_threshold: int,
+                    purple_scale_size: int, image_ext: str,
+                    type_histopath: bool) -> None:
+    """
+    Produce the patches from the WSI in parallel.
+
+    Args:
+        input_folder: Folder containing the WSI.
+        output_folder: Folder to save the patches to.
+        inverse_overlap_factor: Overlap factor used in patch creation.
+        by_folder: Whether to generate the patches by folder or by image.
+        num_workers: Number of workers to use for IO.
+        patch_size: Size of the patches extracted from the WSI.
+        purple_threshold: Number of purple points for region to be considered purple.
+        purple_scale_size: Scalar to use for reducing image to check for purple.
+        image_ext: Image extension for saving patches.
+        type_histopath: Only look for purple histopathology images and filter whitespace.
+    """
+    output_folder.mkdir(parents=True, exist_ok=True)
+    image_locs = get_all_image_paths(
+        master_folder=input_folder) if by_folder else get_image_names(
+            folder=input_folder)
+    outputted_patches = 0
+
+    print(f"\ngetting small crops from {len(image_locs)} "
+          f"images in {input_folder} "
+          f"with inverse overlap factor {inverse_overlap_factor:.2f} "
+          f"outputting in {output_folder}")
 
     start_time = time.time()
-    print('\n' + "getting small crops from " + input_folder +
-          " with inverse overlap factor " + str(inverse_overlap_factor) +
-          " outputting in " + output_folder)
-    confirm_output_folder(output_folder)
-    image_paths = get_all_image_paths(input_folder)
 
-    # for each wsi...
-    for image_path in image_paths:
+    for image_loc in image_locs:
+        image = imread(
+            uri=(image_loc if by_folder else input_folder.joinpath(image_loc)))
 
-        # load the image
-        image = cv2.imread(image_path)
-        x_max = image.shape[0]  # width of image
-        y_max = image.shape[1]  # height of image
+        # Sources:
+        # 1. https://research.wmz.ninja/articles/2018/03/on-sharing-large-arrays-when-using-pythons-multiprocessing.html
+        # 2. https://stackoverflow.com/questions/33247262/the-corresponding-ctypes-type-of-a-numpy-dtype
+        # 3. https://stackoverflow.com/questions/7894791/use-numpy-array-in-shared-memory-for-multiprocessing
+        img = RawArray(
+            typecode_or_type=np.ctypeslib.as_ctypes_type(dtype=image.dtype),
+            size_or_initializer=image.size)
+        img_np = np.frombuffer(buffer=img,
+                               dtype=image.dtype).reshape(image.shape)
+        np.copyto(dst=img_np, src=image)
 
-        if x_max < 224 or y_max < 224:
-            print(image_path, 'of size', x_max, 'by', y_max, "is too small")
+        # Number of x starting points.
+        x_steps = int((image.shape[0] - patch_size) / patch_size *
+                      inverse_overlap_factor) + 1
+        # Number of y starting points.
+        y_steps = int((image.shape[1] - patch_size) / patch_size *
+                      inverse_overlap_factor) + 1
+        # Step size, same for x and y.
+        step_size = int(patch_size / inverse_overlap_factor)
 
+        # Create the queues for passing data back and forth.
+        in_queue = Queue()
+        out_queue = Queue(maxsize=-1)
+
+        # Create the processes for multiprocessing.
+        processes = [
+            Process(target=find_patch_mp,
+                    args=(functools.partial(
+                        find_patch,
+                        output_folder=output_folder,
+                        image=img_np,
+                        by_folder=by_folder,
+                        image_loc=image_loc,
+                        purple_threshold=purple_threshold,
+                        purple_scale_size=purple_scale_size,
+                        image_ext=image_ext,
+                        type_histopath=type_histopath,
+                        patch_size=patch_size), in_queue, out_queue))
+            for __ in range(num_workers)
+        ]
+        for p in processes:
+            p.daemon = True
+            p.start()
+
+        # Put the (x, y) coordinates in the input queue.
+        for xy in itertools.product(range(0, x_steps * step_size, step_size),
+                                    range(0, y_steps * step_size, step_size)):
+            in_queue.put(obj=xy)
+
+        # Store num_workers None values so the processes exit when not enough jobs left.
+        for __ in range(num_workers):
+            in_queue.put(obj=None)
+
+        num_patches = sum([out_queue.get() for __ in range(x_steps * y_steps)])
+
+        # Join the processes as they finish.
+        for p in processes:
+            p.join(timeout=1)
+
+        if by_folder:
+            print(f"{image_loc}: num outputted windows: {num_patches}")
         else:
-            num_outputed_windows = 0
-            x_steps = int(
-                (x_max - config.patch_size) / config.patch_size *
-                inverse_overlap_factor)  # number of x starting points
-            y_steps = int(
-                (y_max - config.patch_size) / config.patch_size *
-                inverse_overlap_factor)  # number of y starting points
-            step_size = int(
-                config.patch_size /
-                inverse_overlap_factor)  # step size, same for x and y
+            outputted_patches += num_patches
 
-            # this is hacky due to the way patches are loaded into pytorch
-            output_subsubfolder = join(output_folder,
-                                       basename(image_path).split('.')[0])
-            output_subsubfolder = join(output_subsubfolder,
-                                       output_subsubfolder.split('/')[-1])
-            confirm_output_folder(output_subsubfolder)
-
-            # slide the window
-            for i in range(x_steps + 1):
-                for j in range(y_steps + 1):
-
-                    x_start = i * step_size
-                    x_end = x_start + config.patch_size
-                    y_start = j * step_size
-                    y_end = y_start + config.patch_size
-
-                    assert x_start >= 0
-                    assert y_start >= 0
-                    assert x_end <= x_max
-                    assert y_end <= y_max
-
-                    patch = image[x_start:x_end, y_start:y_end, :]
-                    assert patch.shape == (config.patch_size,
-                                           config.patch_size, 3)
-                    out_path = join(
-                        output_subsubfolder,
-                        add_zeros(str(x_start)) + ";" +
-                        add_zeros(str(y_start)) + ".jpg")
-
-                    if config.type_histopath:  # do you want to check for white space?
-                        if is_purple(
-                                patch
-                        ):  # if its purple (histopathology images)
-                            imsave(out_path, patch)
-                            num_outputed_windows += 1
-                    else:
-                        imsave(out_path, patch)
-                        num_outputed_windows += 1
-
-            print(image_path, ": num outputed windows:", num_outputed_windows
-                  )  # , "; percent whitespace:", str(whitespace_ratio)[:6])
-
-    total_time = time.time() - start_time
-    print("finished generating patches from " + input_folder + " in " +
-          str(total_time) + " seconds " + " outputting in " + output_folder)
+    if not by_folder:
+        print(
+            f"finished patches from {input_folder} "
+            f"with inverse overlap factor {inverse_overlap_factor:.2f} in {time.time() - start_time:.2f} seconds "
+            f"outputting in {output_folder} "
+            f"for {outputted_patches} patches")
