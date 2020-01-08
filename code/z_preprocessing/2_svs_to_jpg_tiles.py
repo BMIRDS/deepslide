@@ -29,8 +29,8 @@ def output_jpeg_tiles(image_name, output_path):         # converts svs image wit
     width, height = img.level_dimensions[0]
 
     # img_np_rgb = np.zeros((23000, 30000, 3), dtype=np.uint8)
-    increment_x = int(ceil(width/window_size)) if width%window_size != 0 else int(width/window_size)
-    increment_y = int(ceil(height/window_size)) if height%window_size != 0 else int(height/window_size)
+    increment_x = int(ceil(width/window_size))
+    increment_y = int(ceil(height/window_size))
 
     print("converting", image_name, "with width", width, "and height", height)
 
