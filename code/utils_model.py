@@ -355,7 +355,7 @@ def train_helper(model: torchvision.models.resnet.ResNet,
                        f=str(epoch_output_path))
 
         writer.write(f"{epoch},{train_loss:.4f},"
-                     f"{train_acc:.4f},{val_loss:.4f},{val_acc:.4f}")
+                     f"{train_acc:.4f},{val_loss:.4f},{val_acc:.4f}\n")
 
         # Print the diagnostics for each epoch.
         print(f"Epoch {epoch} with lr "
