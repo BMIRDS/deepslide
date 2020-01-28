@@ -58,7 +58,7 @@ def calculate_confusion_matrix(all_labels: np.ndarray,
         pd.Series(all_predicts).replace(remap_classes), categories=classes),
                           name="Predicted")
 
-    cm = pd.crosstab(index=actual, columns=predicted, normalize="index")
+    cm = pd.crosstab(index=actual, columns=predicted, normalize="index", dropna=False)
 
     cm.style.hide_index()
     print(cm)

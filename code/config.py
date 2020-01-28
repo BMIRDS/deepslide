@@ -390,7 +390,7 @@ colors = ("red", "white", "blue", "green", "purple", "orange", "black", "pink",
 # chr(10) and chr(9) are ways of going around the f-string limitation of
 # not allowing the '\' character inside.
 print(f"###############     CONFIGURATION     ###############\n"
-      f"{chr(10).join(f'{k}:{chr(9)}{v}' for k, v in vars(args).items())}"
+      f"{chr(10).join(f'{k}:{chr(9)}{v}' for k, v in vars(args).items())}\n"
       f"device:\t{device}\n"
       f"classes:\t{classes}\n"
       f"num_classes:\t{num_classes}\n"
