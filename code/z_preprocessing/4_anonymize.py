@@ -1,8 +1,7 @@
-import time
 import os
+import random
 from os import listdir
 from os.path import isfile, join, isdir
-import random
 
 
 def get_image_paths(folder):
@@ -105,7 +104,6 @@ for image_set, set_type in zip([train_images, val_images, test_images], ['train'
         label = image_path.split('/')[-2]
 
         folder = '/'.join([output_folder, set_type, label])
-        # confirm_output_folder(folder)
 
         if folder in folder_to_count:
             folder_to_count[folder] += 1
@@ -115,8 +113,6 @@ for image_set, set_type in zip([train_images, val_images, test_images], ['train'
         new_path = '/'.join([output_folder, set_type, label, image_path_to_code[image_path]+'.jpg'])
 
         write_line = new_path + '\t' + image_path
-        # os.system('cp ' + image_path + ' ' + new_path)
-        # print(write_line)
         writer.write(write_line + '\n')
 
 print(folder_to_count)
@@ -126,7 +122,6 @@ test_imgs = [x[:-1] for x in test_img_file]
 test_patients = []
 
 img_to_pid = {image_path_to_code[img_path]: image_path_to_pid[img_path] for img_path in image_path_to_pid}
-# print(img_to_pid)
 
 for test_img in test_imgs:
     test_patients.append(img_to_pid[test_img[:3]])

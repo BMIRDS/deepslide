@@ -4,19 +4,15 @@
 
 import argparse
 import os
+import time
 from os import listdir
 from os.path import isfile, join
 
-import numpy as np
-from scipy.misc import imsave
-from PIL import Image
-from random import randint
-import time
-from scipy.stats import mode
 import cv2
-
-import skimage.measure
-from skimage.transform import rescale, rotate
+import numpy as np
+from PIL import Image
+from imageio import imsave
+from skimage.transform import rescale
 
 Image.MAX_IMAGE_PIXELS = 1e10
 
