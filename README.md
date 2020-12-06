@@ -4,6 +4,8 @@ This repository is a sliding window framework for classification of high resolut
 
 *If you email me with questions about this repository, I will not respond. Open an issue instead.*
 
+We have made the [143 WSI test set](https://bmirds.github.io/LungCancer/) available for evaluating this and other methodologies. Details on using these images are provided on the main dataset page.
+
 ![alt text](figures/figure-2-color.jpeg)
 
 ## Requirements
