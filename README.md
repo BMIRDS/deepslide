@@ -2,10 +2,9 @@
 
 This repository is a sliding window framework for classification of high resolution whole-slide images, often called microscopy or histopathology images. This is also the code for the paper [Pathologist-level Classification of Histologic Patterns on Resected Lung Adenocarcinoma Slides with Deep Neural Networks](https://www.nature.com/articles/s41598-019-40041-7). For a practical guide and implementation tips, see the Medium post [Classification of Histopathology Images with Deep Learning: A Practical Guide](https://medium.com/health-data-science/classification-of-histopathology-images-with-deep-learning-a-practical-guide-2e3ffd6d59c5). 
 
-We have made the [143 WSI test set](https://bmirds.github.io/LungCancer/) available for evaluating this and other methodologies. Details on using these images are provided on the main dataset page.
+We have made 143 digitized high-resolution histology slides of lung adenocarcinoma in the test set and their predominant subtypes according to the consensus opinion of three pathologists at Dartmouth-Hitchcock Medical Center publicly available. More information about this dataset and instructions on how to download are provided on the [dataset webpage](https://bmirds.github.io/LungCancer).
 
-
-*If you email me with questions about this repository, I will not respond. Open an issue instead.*
+*For questions about our code, please open an issue on this code repository.*
 
 
 ![alt text](figures/figure-2-color.jpeg)
