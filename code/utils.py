@@ -24,7 +24,7 @@ def get_classes(folder: Path) -> List[str]:
         A list of strings corresponding to the class names.
     """
     return sorted([f.name for f in folder.iterdir() if
-                   ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))], key=str)
+                   ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name))], key=str)
 
 
 def get_log_csv_name(log_folder: Path) -> Path:
@@ -82,7 +82,7 @@ def get_subfolder_paths(folder: Path) -> List[Path]:
         A list containing the paths of the subfolders.
     """
     return sorted([folder.joinpath(f.name) for f in folder.iterdir() if
-                   ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))], key=str)
+                   ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name))], key=str)
 
 
 def get_all_image_paths(master_folder: Path) -> List[Path]:
@@ -116,7 +116,7 @@ def get_csv_paths(folder: Path) -> List[Path]:
         A list of the paths to the CSV files in the folder.
     """
     return sorted([folder.joinpath(f.name) for f in folder.iterdir() if (
-                (folder.joinpath(f.name).is_file()) and ("csv" in f.name) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))],
+                (folder.joinpath(f.name).is_file()) and ("csv" in f.name) and (".DS_Store" not in f.name))],
                   key=str)
 
 
