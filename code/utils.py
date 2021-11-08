@@ -9,6 +9,9 @@ import datetime
 from pathlib import Path
 from typing import (Dict, List)
 
+# Valid image extensions.
+IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".svs", ".tif", ".tiff", ".png"]
+
 
 def get_classes(folder: Path) -> List[str]:
     """
@@ -20,11 +23,8 @@ def get_classes(folder: Path) -> List[str]:
     Returns:
         A list of strings corresponding to the class names.
     """
-    return sorted([
-        f.name for f in folder.iterdir()
-        if ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name))
-    ],
-                  key=str)
+    return sorted([f.name for f in folder.iterdir() if
+                   ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))], key=str)
 
 
 def get_log_csv_name(log_folder: Path) -> Path:
@@ -53,11 +53,8 @@ def get_image_names(folder: Path) -> List[Path]:
     Returns:
         A list of the names with paths of the images in a folder.
     """
-    return sorted([
-        Path(f.name) for f in folder.iterdir() if ((
-            folder.joinpath(f.name).is_file()) and (".DS_Store" not in f.name))
-    ],
-                  key=str)
+    return sorted([Path(f.name) for f in folder.iterdir() if
+                   ((folder.joinpath(f.name).is_file()) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))], key=str)
 
 
 def get_image_paths(folder: Path) -> List[Path]:
@@ -70,11 +67,8 @@ def get_image_paths(folder: Path) -> List[Path]:
     Returns:
         A list of the full paths to the images in the folder.
     """
-    return sorted([
-        folder.joinpath(f.name) for f in folder.iterdir() if ((
-            folder.joinpath(f.name).is_file()) and (".DS_Store" not in f.name))
-    ],
-                  key=str)
+    return sorted([folder.joinpath(f.name) for f in folder.iterdir() if
+                   ((folder.joinpath(f.name).is_file()) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))], key=str)
 
 
 def get_subfolder_paths(folder: Path) -> List[Path]:
@@ -87,11 +81,8 @@ def get_subfolder_paths(folder: Path) -> List[Path]:
     Returns:
         A list containing the paths of the subfolders.
     """
-    return sorted([
-        folder.joinpath(f.name) for f in folder.iterdir()
-        if ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name))
-    ],
-                  key=str)
+    return sorted([folder.joinpath(f.name) for f in folder.iterdir() if
+                   ((folder.joinpath(f.name).is_dir()) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))], key=str)
 
 
 def get_all_image_paths(master_folder: Path) -> List[Path]:
@@ -124,11 +115,8 @@ def get_csv_paths(folder: Path) -> List[Path]:
     Returns:
         A list of the paths to the CSV files in the folder.
     """
-    return sorted([
-        folder.joinpath(f.name)
-        for f in folder.iterdir() if ((folder.joinpath(f.name).is_file()) and (
-            "csv" in f.name) and (".DS_Store" not in f.name))
-    ],
+    return sorted([folder.joinpath(f.name) for f in folder.iterdir() if (
+                (folder.joinpath(f.name).is_file()) and ("csv" in f.name) and (".DS_Store" not in f.name) and (f.suffix.casefold() in IMAGE_EXTS))],
                   key=str)
 
 
