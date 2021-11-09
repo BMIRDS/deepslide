@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import (Dict, List)
 
 # Valid image extensions.
-IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".svs", ".tif", ".tiff", ".png"]
+IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".svs", ".tif", ".tiff"]
 
 
 def get_classes(folder: Path) -> List[str]:
