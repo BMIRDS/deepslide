@@ -529,7 +529,7 @@ def get_best_model(checkpoints_folder: Path) -> str:
     """
     return max({
         model: parse_val_acc(model_path=model)
-        for model in get_image_paths(folder=checkpoints_folder)
+        for model in [m for m in checkpoints_folder.rglob("*.pt") if ".DS_Store" not in str(m)]
     }.items(),
                key=operator.itemgetter(1))[0]
 
