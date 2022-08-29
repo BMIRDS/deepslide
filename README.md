@@ -11,19 +11,27 @@ We have made 143 digitized high-resolution histology slides of lung adenocarcino
 
 ## Requirements
 - [imageio](https://pypi.org/project/imageio/)
-- [NumPy 1.16](https://numpy.org/)
+- [NumPy](https://numpy.org/)
 - [OpenCV](https://opencv.org/)
 - [OpenSlide](https://openslide.org/)
 - [OpenSlide Python](https://openslide.org/api/python/)
 - [pandas](https://pandas.pydata.org/)
 - [PIL](https://pillow.readthedocs.io/en/5.3.x/)
-- [Python 3.6](https://www.python.org/downloads/release/python-360/)
+- [Python 3.7+](https://www.python.org/downloads/release/python-360/)
 - [PyTorch](https://pytorch.org/)
 - [scikit-image](https://scikit-image.org/)
 - [scikit-learn](https://scikit-learn.org/stable/install.html)
 - [SciPy](https://www.scipy.org/)
 - [NVIDIA GPU](https://www.nvidia.com/en-us/)
 - [Ubuntu](https://ubuntu.com/)
+
+## Installing Dependencies (Recommended method)
+
+`conda env create --file setup/conda_env.yaml`
+
+This command creates a conda environment called 'deepslide_env' with Python 3.9 and PyTorch with CUDA 11.3. Please modify the environment file(s) for other versions.
+
+In addition, `install_openslide.sh` installs dependencies of OpenSlide package in Ubuntu. For other platforms, please visit to the OpenSlide's official website for more information.
 
 # Usage
 
