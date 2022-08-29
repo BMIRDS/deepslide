@@ -53,6 +53,14 @@ If you do not want to duplicate the data, append `--keep_orig_copy False` to the
 
 Note that `all_wsi` must contain subfolders of images labeled by class. For instance, if your two classes are `a` and `n`, you must have `a/*.jpg` with the images in class `a` and `n/*.jpg` with images in class `n`.
 
+If you already have a patch-based preprocessed dataset, you may skip to Stage 3 for model training. Please make sure that at least:
+
+1. `all_wsi` has a folder for each class as a placeholder (they can be empty).
+
+2. Both `train_folder/train` and `train_folder/val` folders contain a folder for each slide that belongs to its partition. The slide folder should contain at least one patch extracted from the slide.
+
+3. Review `code/config.py` and make appropriate/necessary changes for your dataset.
+
 ### Example
 ```
 python code/1_split.py --val_wsi_per_class 10 --test_wsi_per_class 20
