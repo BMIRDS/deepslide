@@ -57,7 +57,7 @@ If you already have a patch-based preprocessed dataset, you may skip to Stage 3 
 
 1. `all_wsi` has a folder for each class as a placeholder (they can be empty).
 
-2. Both `train_folder/train` and `train_folder/val` folders contain a folder for each slide that belongs to its partition. The slide folder should contain at least one patch extracted from the slide.
+2. Both `train_folder/train` and `train_folder/val` folders contain a folder for each class and each slide that belongs to its partition. The slide folder should contain at least one patch extracted from the slide (e.g., `train_folder/train/<class_name>/<slide_name>/<patch_file>`).
 
 3. Review `code/config.py` and make appropriate/necessary changes for your dataset.
 
