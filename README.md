@@ -11,19 +11,27 @@ We have made 143 digitized high-resolution histology slides of lung adenocarcino
 
 ## Requirements
 - [imageio](https://pypi.org/project/imageio/)
-- [NumPy 1.16](https://numpy.org/)
+- [NumPy 1.16+](https://numpy.org/)
 - [OpenCV](https://opencv.org/)
 - [OpenSlide](https://openslide.org/)
 - [OpenSlide Python](https://openslide.org/api/python/)
 - [pandas](https://pandas.pydata.org/)
 - [PIL](https://pillow.readthedocs.io/en/5.3.x/)
-- [Python 3.6](https://www.python.org/downloads/release/python-360/)
+- [Python 3.7+](https://www.python.org/downloads/release/python-360/)
 - [PyTorch](https://pytorch.org/)
 - [scikit-image](https://scikit-image.org/)
 - [scikit-learn](https://scikit-learn.org/stable/install.html)
 - [SciPy](https://www.scipy.org/)
 - [NVIDIA GPU](https://www.nvidia.com/en-us/)
 - [Ubuntu](https://ubuntu.com/)
+
+## Installing Dependencies (Recommended method)
+
+`conda env create --file setup/conda_env.yaml`
+
+This command creates a conda environment called 'deepslide_env' with Python 3.9 and PyTorch with CUDA 11.3. Please modify the environment file(s) for other versions.
+
+In addition, `install_openslide.sh` installs dependencies of OpenSlide package in Ubuntu. For other platforms, please visit to the OpenSlide's official website for more information.
 
 # Usage
 
@@ -44,6 +52,14 @@ If you do not want to duplicate the data, append `--keep_orig_copy False` to the
 **Outputs**: `wsi_train`, `wsi_val`, `wsi_test`, `labels_train.csv`, `labels_val.csv`, `labels_test.csv`
 
 Note that `all_wsi` must contain subfolders of images labeled by class. For instance, if your two classes are `a` and `n`, you must have `a/*.jpg` with the images in class `a` and `n/*.jpg` with images in class `n`.
+
+If you already have a patch-based preprocessed dataset, you may skip to Stage 3 for model training. Please make sure that at least:
+
+1. `all_wsi` has a folder for each class as a placeholder (they can be empty).
+
+2. Both `train_folder/train` and `train_folder/val` folders contain a folder for each class and each slide that belongs to its partition. The slide folder should contain at least one patch extracted from the slide (e.g., `train_folder/train/<class_name>/<slide_name>/<patch_file>`).
+
+3. Review `code/config.py` and make appropriate/necessary changes for your dataset.
 
 ### Example
 ```

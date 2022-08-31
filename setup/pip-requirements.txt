@@ -1,0 +1,6 @@
+numpy
+imageio
+pillow
+opencv-python
+openslide-python
+Jinja2

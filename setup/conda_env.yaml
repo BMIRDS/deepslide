@@ -1,0 +1,16 @@
+#$ conda env create --file conda-env.yaml
+name: deepslide_env
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.9
+  - torchvision
+  - cudatoolkit=11.3
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - scikit-image
+  - pip
+  - pip:
+    - -r pip-requirements.txt
