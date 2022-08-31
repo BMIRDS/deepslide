@@ -11,7 +11,7 @@ We have made 143 digitized high-resolution histology slides of lung adenocarcino
 
 ## Requirements
 - [imageio](https://pypi.org/project/imageio/)
-- [NumPy](https://numpy.org/)
+- [NumPy 1.16+](https://numpy.org/)
 - [OpenCV](https://opencv.org/)
 - [OpenSlide](https://openslide.org/)
 - [OpenSlide Python](https://openslide.org/api/python/)
