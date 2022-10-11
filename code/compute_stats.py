@@ -4,7 +4,7 @@ Computes the image statistics for normalization.
 
 Authors: Naofumi Tomita
 """
-
+import argparse
 from pathlib import Path
 from typing import (List, Tuple)
 
@@ -65,7 +65,8 @@ def compute_stats(folderpath: Path,
         def __len__(self) -> int:
             return len(self.data)
 
-    def online_mean_and_sd(loader: torch.utils.data.DataLoader
+    def online_mean_and_sd(
+        loader: torch.utils.data.DataLoader, report_interval: int=1000
                            ) -> Tuple[List[float], List[float]]:
         """
         Computes the mean and standard deviation online.
@@ -73,15 +74,17 @@ def compute_stats(folderpath: Path,
 
         Args:
             loader: The PyTorch DataLoader containing the images to iterate over.
+            report_interval: Report the intermediate results every N items. (N=0 to suppress reporting.)
 
         Returns:
-            A tuple containing the mean and standard deviation for the images over the channel, height, and width axes.
+            A tuple containing the mean and standard deviation for the images
+            over the channel, height, and width axes.
         """
         cnt = 0
         fst_moment = torch.empty(3)
         snd_moment = torch.empty(3)
 
-        for data in loader:
+        for i, data in enumerate(loader, 1):
             b, __, h, w = data.shape
             nb_pixels = b * h * w
             fst_moment = (cnt * fst_moment +
@@ -89,12 +92,31 @@ def compute_stats(folderpath: Path,
             snd_moment = (cnt * snd_moment + torch.sum(
                 data**2, dim=[0, 2, 3])) / (cnt + nb_pixels)
             cnt += nb_pixels
+            if report_interval != 0 and i % report_interval == 0:
+                temp_mean = fst_moment.tolist()
+                temp_std = torch.sqrt(snd_moment - fst_moment**2).tolist()
+                print(f"Mean: {temp_mean}; STD: {temp_std} at iter: {i}")
         return fst_moment.tolist(), torch.sqrt(snd_moment -
                                                fst_moment**2).tolist()
 
     return online_mean_and_sd(
-        loader=torch.utils.data.DataLoader(dataset=MyDataset(
-            folder=folderpath),
-                                           batch_size=1,
-                                           num_workers=1,
-                                           shuffle=False))
+        loader=torch.utils.data.DataLoader(
+            dataset=MyDataset(folder=folderpath),
+            batch_size=1,
+            num_workers=1,
+            shuffle=False))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Compute channel-wise patch color mean and std.')
+    parser.add_argument('--datapath', '-d', type=str, required=True,
+        help='Path containing images.')
+    parser.add_argument('--image_ext', '-x', type=str, default='.png',
+        help='Specify file extension of images. Default: .png')
+    parser.add_argument('--report_interval', '-n', type=int, default=1000,
+        help='Report the intermediate results every N items. Default: 1000')
+    args = parser.parse_args()
+
+    mean, std = compute_stats(Path(args.datapath), args.image_ext)
+    print(f"Mean: {mean}; STD: {std}")
