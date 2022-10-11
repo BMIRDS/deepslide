@@ -5,8 +5,11 @@ Computes the image statistics for normalization.
 Authors: Naofumi Tomita
 """
 import argparse
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import (List, Tuple)
+
 
 import torch
 from PIL import Image
@@ -110,13 +113,29 @@ def compute_stats(folderpath: Path,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Compute channel-wise patch color mean and std.')
-    parser.add_argument('--datapath', '-d', type=str, required=True,
+    parser.add_argument('--datapath', '-i', type=str, required=True,
         help='Path containing images.')
     parser.add_argument('--image_ext', '-x', type=str, default='.png',
         help='Specify file extension of images. Default: .png')
     parser.add_argument('--report_interval', '-n', type=int, default=1000,
         help='Report the intermediate results every N items. Default: 1000')
+    parser.add_argument('--save_results', '-d', action='store_true', default=False,
+        help='Set this flag to save results.')
     args = parser.parse_args()
 
-    mean, std = compute_stats(Path(args.datapath), args.image_ext)
+    mean, std = compute_stats(Path(args.datapath), args.image_ext,)
     print(f"Mean: {mean}; STD: {std}")
+
+    if args.save_results:
+        data = {
+            'mean': mean,
+            'std': std,
+            'datapath': args.datapath}
+        data = json.dumps(data, indent=4)
+        filename = f"stats_{datetime.now().strftime('%Y-%m-%d_%H:%M')}.json"
+        with open(filename, 'w') as outfile:
+            outfile.write(data)
+        print(f"Results are saved in {filename}.")
+
+
+
