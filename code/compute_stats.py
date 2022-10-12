@@ -109,6 +109,27 @@ def compute_stats(folderpath: Path,
             num_workers=1,
             shuffle=False))
 
+def save_stats(mean: List, std: List, datapath: str):
+    data = {
+        'mean': mean,
+        'std': std,
+        'datapath': datapath}
+    data = json.dumps(data, indent=4)
+    filename = f"stats_{datetime.now().strftime('%Y-%m-%d_%H:%M')}.json"
+    with open(filename, 'w') as outfile:
+        outfile.write(data)
+
+    print(f"Results are saved in {filename}.")
+
+def load_stats(jsonfile: str):
+    """ Load a stats file in json and return mean and std in lists.
+    """
+    with open(jsonfile, 'r') as infile:        
+        data = json.load(infile)
+
+    print(f"Stats of \'{data['datapath']}\' are loaded from {jsonfile}.")
+    return data['mean'], data['std']
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -127,15 +148,6 @@ if __name__ == '__main__':
     print(f"Mean: {mean}; STD: {std}")
 
     if args.save_results:
-        data = {
-            'mean': mean,
-            'std': std,
-            'datapath': args.datapath}
-        data = json.dumps(data, indent=4)
-        filename = f"stats_{datetime.now().strftime('%Y-%m-%d_%H:%M')}.json"
-        with open(filename, 'w') as outfile:
-            outfile.write(data)
-        print(f"Results are saved in {filename}.")
-
+        save_stats(mean=mean, std=std, datapath=args.datapath)
 
 
