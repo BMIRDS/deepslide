@@ -364,8 +364,8 @@ num_classes = len(classes)
 train_patches = args.train_folder.joinpath("train")
 val_patches = args.train_folder.joinpath("val")
 
-# Compute the mean and standard deviation for the given set of WSI for normalization.
-path_mean, path_std = compute_stats(folderpath=args.all_wsi,
+# Compute the mean and standard deviation of the image patches from the specified folder.
+path_mean, path_std = compute_stats(folderpath=train_patches,
                                     image_ext=args.image_ext)
 
 # Only used is resume_checkpoint is True.
