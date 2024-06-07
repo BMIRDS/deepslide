@@ -60,7 +60,12 @@ def calculate_confusion_matrix(all_labels: np.ndarray,
 
     cm = pd.crosstab(index=actual, columns=predicted, normalize="index", dropna=False)
 
-    cm.style.hide_index()
+    
+    # cm.style.hide_index() 
+    # Pandas hide_index method became deprecated since the version 1.4.0,
+    # should be replaced by:
+    cm.style.hide()
+
     print(cm)
 
 
